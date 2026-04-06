@@ -6,7 +6,7 @@ import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 
 export default function Dashboard() {
-  const { user } = useAuthStore();
+  const { user, refreshUser } = useAuthStore();
   const { skills, matches, fetchMySkills, addSkill, deleteSkill, fetchMatches } = useSkillStore();
   const { sessions, fetchSessions } = useSessionStore();
 
@@ -20,10 +20,11 @@ export default function Dashboard() {
   const API_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
+    if (refreshUser) refreshUser();
     fetchMySkills();
     fetchMatches();
     fetchSessions();
-  }, [fetchMySkills, fetchMatches, fetchSessions]);
+  }, [fetchMySkills, fetchMatches, fetchSessions, refreshUser]);
 
   const handleAddSkill = (e) => {
     e.preventDefault();

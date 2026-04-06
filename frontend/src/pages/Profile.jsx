@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
+import { useChatStore } from '../store/chatStore';
 
 const API_URL = 'http://localhost:5000/api';
 
 export default function Profile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
   const { reviews, fetchReviews } = useReviewStore();
+  const { getOrCreateConversation } = useChatStore();
   const isOwnProfile = !id || id === currentUser?._id;
 
   const [profile, setProfile] = useState(null);
@@ -73,6 +76,16 @@ export default function Profile() {
     }
   };
 
+  const handleStartChat = async () => {
+    try {
+      if (!profile || !profile._id) return;
+      const conv = await getOrCreateConversation(profile._id);
+      navigate(`/chat/${conv._id}`);
+    } catch (err) {
+      alert('Failed to start conversation');
+    }
+  };
+
   const getCompletenessScore = () => {
     if (!profile) return 0;
     let score = 0;
@@ -124,12 +137,19 @@ export default function Profile() {
                   <span className="text-sm text-gray-500">{profile.rating?.toFixed(1) || '0.0'} ({profile.numReviews || 0} reviews)</span>
                 </div>
               </div>
-              {isOwnProfile && (
+              {isOwnProfile ? (
                 <button
                   onClick={() => setIsEditing(!isEditing)}
                   className="px-4 py-2 text-sm font-medium bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition"
                 >
                   {isEditing ? 'Cancel' : '✏️ Edit Profile'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleStartChat}
+                  className="px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition"
+                >
+                  💬 Message
                 </button>
               )}
             </div>

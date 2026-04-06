@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useSkillStore } from '../store/skillStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
+import { useNavigate } from 'react-router-dom';
+import { useChatStore } from '../store/chatStore';
 
 const API_URL = 'http://localhost:5000/api';
 
 export default function Explore() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const { getOrCreateConversation } = useChatStore();
   const [results, setResults] = useState([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -56,6 +60,15 @@ export default function Explore() {
     e.preventDefault();
     setPage(1);
     fetchExplore();
+  };
+
+  const handleStartChat = async (mentorId) => {
+    try {
+      const conv = await getOrCreateConversation(mentorId);
+      navigate(`/chat/${conv._id}`);
+    } catch (err) {
+      alert('Failed to start conversation');
+    }
   };
 
   const handleBookSession = async () => {
@@ -247,16 +260,22 @@ export default function Explore() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowBooking({ user: mentor, skills: teachSkills })}
-                    className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
+                    className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:shadow-lg transition-all"
                   >
                     Book Session
                   </button>
-                  <a
-                    href={`/profile/${mentor._id}`}
-                    className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
+                  <button
+                    onClick={() => handleStartChat(mentor._id)}
+                    className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
+                  >
+                    Message
+                  </button>
+                  <button
+                    onClick={() => navigate(`/profile/${mentor._id}`)}
+                    className="flex-1 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
                   >
                     View
-                  </a>
+                  </button>
                 </div>
               </div>
             ))}

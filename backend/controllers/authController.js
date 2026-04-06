@@ -35,6 +35,7 @@ export const registerUser = async (req, res) => {
         _id: user.id,
         name: user.name,
         email: user.email,
+        skillCredits: user.skillCredits,
         token: generateToken(user._id),
       });
     } else {
@@ -60,6 +61,7 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         profileComplete: user.profileComplete,
+        skillCredits: user.skillCredits,
         token: generateToken(user._id),
       });
     } else {

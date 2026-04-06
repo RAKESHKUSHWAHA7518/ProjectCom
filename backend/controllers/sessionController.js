@@ -102,10 +102,11 @@ export const updateSessionStatus = async (req, res) => {
       return res.status(401).json({ message: 'Not authorized' });
     }
 
+    const wasAlreadyCompleted = session.status === 'completed';
     session.status = status;
 
     // Logic for completion: Reward mentor based on exchanged credits
-    if (status === 'completed' && isMentor) {
+    if (status === 'completed' && !wasAlreadyCompleted) {
       const mentor = await User.findById(session.mentor);
       mentor.skillCredits += session.creditsExchanged;
       mentor.totalSessionsAsMentor += 1;
@@ -116,14 +117,15 @@ export const updateSessionStatus = async (req, res) => {
       learner.totalSessionsAsLearner += 1;
       await learner.save();
 
-      // Notify both parties
+      // Notify the other party depending on who completed it
+      const otherUser = isMentor ? session.learner : session.mentor;
       await Notification.create({
-        user: session.learner,
+        user: otherUser,
         type: 'session_completed',
         title: 'Session Completed',
         message: `Your session has been marked as completed. Don't forget to leave a review!`,
         link: '/sessions',
-        relatedUser: session.mentor,
+        relatedUser: req.user.id,
       });
     }
 

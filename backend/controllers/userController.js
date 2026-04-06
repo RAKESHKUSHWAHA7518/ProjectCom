@@ -83,32 +83,44 @@ export const getPublicProfile = async (req, res) => {
 // @access  Public
 export const getLeaderboard = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, type } = req.query;
 
     let pipeline = [];
 
     if (category) {
-      // Find users who teach in this category
-      const skillUsers = await Skill.find({ type: 'teach', category: new RegExp(category, 'i') }).distinct('user');
-      pipeline.push({ $match: { _id: { $in: skillUsers } } });
+       // Filter category depending on type if you really want, but let's just 
+       // apply category to both, or simply keep original behavior
+       const skillTypeFilter = type === 'learners' ? 'learn' : 'teach';
+       const skillUsers = await Skill.find({ type: skillTypeFilter, category: new RegExp(category, 'i') }).distinct('user');
+       pipeline.push({ $match: { _id: { $in: skillUsers } } });
     }
 
-    pipeline.push(
-      { $match: { numReviews: { $gt: 0 } } },
-      { $sort: { rating: -1, numReviews: -1 } },
-      { $limit: 50 },
-      { $project: { password: 0 } }
-    );
+    if (type === 'learners') {
+      pipeline.push(
+        { $match: { totalSessionsAsLearner: { $gt: 0 } } },
+        { $sort: { totalSessionsAsLearner: -1 } },
+        { $limit: 50 },
+        { $project: { password: 0 } }
+      );
+    } else {
+      pipeline.push(
+        { $match: { numReviews: { $gt: 0 } } },
+        { $sort: { rating: -1, numReviews: -1 } },
+        { $limit: 50 },
+        { $project: { password: 0 } }
+      );
+    }
 
     const topUsers = await User.aggregate(pipeline);
 
     // Populate badges for each user
     const populated = await User.populate(topUsers, { path: 'badges' });
 
-    // Attach teach skills to each user
+    // Attach relevant skills to each user
     const results = await Promise.all(
       populated.map(async (u) => {
-        const skills = await Skill.find({ user: u._id, type: 'teach' });
+        const skills = await Skill.find({ user: u._id, type: type === 'learners' ? 'learn' : 'teach' });
+        // Use teachSkills for the field name so frontend still works without changing the property name, or name it accordingly
         return { ...u, teachSkills: skills };
       })
     );
