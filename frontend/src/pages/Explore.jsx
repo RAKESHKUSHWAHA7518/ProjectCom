@@ -5,7 +5,7 @@ import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatStore';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Explore() {
   const { user } = useAuthStore();

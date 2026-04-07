@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // Note: In an actual app these endpoints point to localhost:5000/api or similar
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth`;
 
 export const useAuthStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,

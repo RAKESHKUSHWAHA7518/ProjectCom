@@ -17,7 +17,7 @@ export default function Dashboard() {
   const [bookingNotes, setBookingNotes] = useState('');
   const [bookingSkill, setBookingSkill] = useState('');
 
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     if (refreshUser) refreshUser();
