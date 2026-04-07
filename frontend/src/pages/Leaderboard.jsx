@@ -36,7 +36,7 @@ export default function Leaderboard() {
     if (index === 0) return 'bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-lg shadow-yellow-400/30';
     if (index === 1) return 'bg-gradient-to-r from-gray-300 to-gray-400 text-white shadow-lg shadow-gray-400/30';
     if (index === 2) return 'bg-gradient-to-r from-orange-400 to-amber-600 text-white shadow-lg shadow-orange-400/30';
-    return 'bg-gray-100 text-gray-600';
+    return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400';
   };
 
   const getRankEmoji = (index) => {
@@ -49,17 +49,17 @@ export default function Leaderboard() {
   return (
     <div className="py-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">🏆 Leaderboard</h1>
-        <p className="mt-2 text-gray-500">Our top {type === 'learners' ? 'learners' : 'mentors'} in the community</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🏆 Leaderboard</h1>
+        <p className="mt-2 text-gray-500 dark:text-gray-400">Our top {type === 'learners' ? 'learners' : 'mentors'} in the community</p>
       </div>
 
       {/* Type Toggle */}
       <div className="flex justify-center mb-6">
-        <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+        <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex gap-1">
           <button
             onClick={() => setType('mentors')}
             className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
-              type === 'mentors' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              type === 'mentors' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Top Mentors
@@ -67,7 +67,7 @@ export default function Leaderboard() {
           <button
             onClick={() => setType('learners')}
             className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${
-              type === 'learners' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              type === 'learners' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             Top Learners
@@ -80,7 +80,7 @@ export default function Leaderboard() {
         <button
           onClick={() => setCategory('')}
           className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-            !category ? 'bg-primary-600 text-white shadow-lg' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            !category ? 'bg-primary-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
           All
@@ -90,7 +90,7 @@ export default function Leaderboard() {
             key={cat.value}
             onClick={() => setCategory(cat.value)}
             className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
-              category === cat.value ? 'bg-primary-600 text-white shadow-lg' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              category === cat.value ? 'bg-primary-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
             {cat.icon} {cat.value}
@@ -105,8 +105,8 @@ export default function Leaderboard() {
       ) : leaders.length === 0 ? (
         <div className="py-20 text-center">
           <div className="text-6xl mb-4">🏅</div>
-          <h3 className="text-xl font-semibold text-gray-700">No leaders yet</h3>
-          <p className="text-gray-500 mt-2">Complete sessions and earn reviews to appear here!</p>
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">No leaders yet</h3>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">Complete sessions and earn reviews to appear here!</p>
         </div>
       ) : (
         <div className="max-w-3xl mx-auto space-y-3">
@@ -122,29 +122,29 @@ export default function Leaderboard() {
                     key={leader._id}
                     className={`block p-6 rounded-2xl text-center transition-all hover:-translate-y-1 ${
                       idx === 0
-                        ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-xl -mt-4'
-                        : 'bg-white border border-gray-100 shadow-sm'
+                        ? 'bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30 border-2 border-yellow-200 dark:border-yellow-800 shadow-xl -mt-4'
+                        : 'bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm'
                     }`}
                   >
                     <div className="text-3xl mb-2">{getRankEmoji(idx)}</div>
                     <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary-400 to-indigo-500 text-white rounded-full flex items-center justify-center text-2xl font-bold mb-3">
                       {leader.name?.charAt(0)}
                     </div>
-                    <h3 className="font-bold text-gray-900 truncate">{leader.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white truncate">{leader.name}</h3>
                     {type === 'mentors' ? (
                       <>
                         <div className="text-yellow-500 mt-1">{'⭐'.repeat(Math.round(leader.rating || 0))}</div>
-                        <p className="text-sm text-gray-500">{leader.rating?.toFixed(1)} ({leader.numReviews} reviews)</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{leader.rating?.toFixed(1)} ({leader.numReviews} reviews)</p>
                       </>
                     ) : (
                       <div className="mt-1">
-                        <span className="text-sm font-bold text-emerald-600">{leader.totalSessionsAsLearner}</span>
-                        <p className="text-xs text-gray-500">Sessions Learned</p>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{leader.totalSessionsAsLearner}</span>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Sessions Learned</p>
                       </div>
                     )}
                     <div className="flex flex-wrap justify-center gap-1 mt-2">
                       {leader.teachSkills?.slice(0, 2).map((s) => (
-                        <span key={s._id} className={`px-2 py-0.5 text-[10px] rounded-md ${type === 'learners' ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>{s.name}</span>
+                        <span key={s._id} className={`px-2 py-0.5 text-[10px] rounded-md ${type === 'learners' ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400'}`}>{s.name}</span>
                       ))}
                     </div>
                   </Link>
@@ -155,7 +155,7 @@ export default function Leaderboard() {
 
           {/* Rest of the list */}
           {leaders.slice(3).map((leader, index) => (
-            <Link to={`/profile/${leader._id}`} key={leader._id} className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+            <Link to={`/profile/${leader._id}`} key={leader._id} className="flex items-center gap-4 p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${getRankStyle(index + 3)}`}>
                 {index + 4}
               </div>
@@ -163,28 +163,28 @@ export default function Leaderboard() {
                 {leader.name?.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-900 truncate">{leader.name}</h3>
-                <p className="text-sm text-gray-500">{leader.location || 'Worldwide'}</p>
+                <h3 className="font-bold text-gray-900 dark:text-white truncate">{leader.name}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{leader.location || 'Worldwide'}</p>
               </div>
               <div className="text-right shrink-0">
                 {type === 'mentors' ? (
                   <>
                     <div className="flex items-center justify-end gap-1">
                       <span className="text-yellow-500">⭐</span>
-                      <span className="font-bold text-gray-900">{leader.rating?.toFixed(1)}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{leader.rating?.toFixed(1)}</span>
                     </div>
-                    <p className="text-xs text-gray-500">{leader.numReviews} reviews</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{leader.numReviews} reviews</p>
                   </>
                 ) : (
                   <>
-                    <div className="font-bold text-emerald-600">{leader.totalSessionsAsLearner}</div>
-                    <p className="text-xs text-gray-500">learned</p>
+                    <div className="font-bold text-emerald-600 dark:text-emerald-400">{leader.totalSessionsAsLearner}</div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">learned</p>
                   </>
                 )}
               </div>
               <div className="hidden md:flex flex-wrap gap-1 max-w-[200px]">
                 {leader.teachSkills?.slice(0, 3).map((s) => (
-                  <span key={s._id} className={`px-2 py-0.5 text-xs rounded-md ${type === 'learners' ? 'bg-emerald-50 text-emerald-700' : 'bg-indigo-50 text-indigo-700'}`}>{s.name}</span>
+                  <span key={s._id} className={`px-2 py-0.5 text-xs rounded-md ${type === 'learners' ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' : 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400'}`}>{s.name}</span>
                 ))}
               </div>
             </Link>

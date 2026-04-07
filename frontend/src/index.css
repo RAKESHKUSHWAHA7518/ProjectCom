@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @theme {
@@ -12,18 +13,39 @@
   --color-primary-700: #1d4ed8;
   --color-primary-800: #1e40af;
   --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+
+  --color-accent-50: #f5f3ff;
+  --color-accent-100: #ede9fe;
+  --color-accent-200: #ddd6fe;
+  --color-accent-300: #c4b5fd;
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+  --color-accent-600: #7c3aed;
+  --color-accent-700: #6d28d9;
+  --color-accent-800: #5b21b6;
+  --color-accent-900: #4c1d95;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* ===========================
+   BASE
+   =========================== */
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
-  }
-
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* --- Dark mode overrides --- */
+  html.dark body {
+    background-color: #030712;
+    color: #f3f4f6;
   }
 
   /* Custom scrollbar */
@@ -31,71 +53,138 @@
     width: 6px;
     height: 6px;
   }
-
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-
   ::-webkit-scrollbar-thumb {
     background: #d1d5db;
     border-radius: 99px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
   }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #374151;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
 }
 
+/* ===========================
+   UTILITIES
+   =========================== */
 @layer utilities {
-  /* Animate in */
-  .animate-in {
-    animation: animateIn 0.2s ease-out;
-  }
 
-  @keyframes animateIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  /* Text gradient */
+  /* --- Text gradient --- */
   .text-gradient {
     background: linear-gradient(135deg, #2563eb, #7c3aed);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
-  /* Glass effect */
+  /* --- Glass effect (light) --- */
   .glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+  .dark .glass {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Line clamp utility */
+  /* --- Glass card (elevated) --- */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+  .dark .glass-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.2),
+      0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* --- Layered shadow system --- */
+  .shadow-elevated {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 4px 8px rgba(0, 0, 0, 0.04),
+      0 12px 24px rgba(0, 0, 0, 0.06);
+  }
+  .dark .shadow-elevated {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 4px 8px rgba(0, 0, 0, 0.15),
+      0 12px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .shadow-float {
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.02),
+      0 12px 20px rgba(0, 0, 0, 0.05),
+      0 24px 48px rgba(0, 0, 0, 0.08);
+  }
+  .dark .shadow-float {
+    box-shadow:
+      0 4px 6px rgba(0, 0, 0, 0.15),
+      0 12px 20px rgba(0, 0, 0, 0.2),
+      0 24px 48px rgba(0, 0, 0, 0.25);
+  }
+
+  /* --- Active nav link --- */
+  .nav-active {
+    @apply bg-primary-50 text-primary-700;
+  }
+  .dark .nav-active {
+    background: rgba(37, 99, 235, 0.15);
+    color: #93c5fd;
+  }
+
+  /* --- Line clamps --- */
   .line-clamp-1 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 1;
   }
-
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
-
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  /* --- Floating orbs (hero background) --- */
+  @keyframes float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-24px) scale(1.05); }
+  }
+  @keyframes float-reverse {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(20px) scale(0.95); }
+  }
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
+  }
+  .animate-float-reverse {
+    animation: float-reverse 10s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float 14s ease-in-out infinite;
   }
 }
