@@ -103,24 +103,29 @@ io.on('connection', (socket) => {
 
   // --- WEBRTC SIGNALING EVENTS ---
   socket.on('join-room', (roomId, userId) => {
+    console.log(`join-room | socket=${socket.id} user=${userId} room=${roomId}`);
     socket.join(roomId);
     socket.to(roomId).emit('user-connected', userId);
   });
 
   socket.on('leave-room', (roomId, userId) => {
+    console.log(`leave-room | socket=${socket.id} user=${userId} room=${roomId}`);
     socket.leave(roomId);
     socket.to(roomId).emit('user-disconnected', userId);
   });
 
   socket.on('offer', (payload) => {
+    console.log(`offer | from=${socket.id} target=${payload.target}`);
     socket.to(payload.target).emit('offer', payload);
   });
 
   socket.on('answer', (payload) => {
+    console.log(`answer | from=${socket.id} target=${payload.target}`);
     socket.to(payload.target).emit('answer', payload);
   });
 
   socket.on('ice-candidate', (incoming) => {
+    console.log(`ice-candidate | from=${socket.id} target=${incoming.target}`);
     socket.to(incoming.target).emit('ice-candidate', incoming.candidate);
   });
 

@@ -7,10 +7,14 @@ export default function VideoCall() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const localStreamRef = useRef(null);
+
+  // Buffer to hold ICE candidates that arrive before the remote description is set
+  const pendingCandidates = useRef([]);
 
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -27,16 +31,35 @@ export default function VideoCall() {
 
   useEffect(() => {
     if (!roomId) return;
-    
+
     let isMounted = true;
     let localStream = null;
 
     const initCall = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          if (isMounted) {
+            setCallStatus('Camera unavailable: open on HTTPS or localhost');
+          }
+          return;
+        }
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true,
+          });
+        } catch (mediaErr) {
+          console.warn('Could not access camera/mic, joining with no media. Error:', mediaErr);
+          // Create an empty stream so the call can still connect
+          stream = new MediaStream();
+          setIsVideoOff(true);
+          setIsMuted(true);
+          if (isMounted) {
+            setCallStatus('Joined as Viewer (No Camera/Mic)');
+          }
+        }
 
         if (!isMounted) {
           // If unmounted before stream resolves, kill it immediately
@@ -59,14 +82,13 @@ export default function VideoCall() {
         socket.off('ice-candidate');
         socket.off('user-disconnected');
 
-        socket.emit('join-room', roomId, user._id);
-        setCallStatus('Waiting for other participant...');
-
+        // 1. ATTACH LISTENERS FIRST
         // When another user connects
         socket.on('user-connected', async (userId) => {
           if (!isMounted) return;
           console.log('Peer connected:', userId);
           setCallStatus('Peer connected. Setting up call...');
+
           await createPeerConnection(socket, userId);
 
           // We are the caller
@@ -85,10 +107,23 @@ export default function VideoCall() {
         socket.on('offer', async (data) => {
           if (!isMounted) return;
           console.log('Received offer');
-          await createPeerConnection(socket, data.caller);
+          setCallStatus('Offer received. Connecting...');
+
+          if (!peerConnectionRef.current) {
+            await createPeerConnection(socket, data.caller);
+          }
           const pc = peerConnectionRef.current;
-          
+
           await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+          // Flush any ICE candidates that arrived early
+          pendingCandidates.current.forEach(c => {
+            if (c) {
+              pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+            }
+          });
+          pendingCandidates.current = [];
+
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
@@ -103,16 +138,36 @@ export default function VideoCall() {
         socket.on('answer', async (data) => {
           if (!isMounted) return;
           console.log('Received answer');
-          if (peerConnectionRef.current) {
-            await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.sdp));
+          const pc = peerConnectionRef.current;
+
+          if (pc) {
+            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+            // Flush any ICE candidates that arrived early
+            pendingCandidates.current.forEach(c => {
+              if (c) {
+                pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+              }
+            });
+            pendingCandidates.current = [];
           }
         });
 
         // Receive ICE candidate
-        socket.on('ice-candidate', (candidate) => {
+        socket.on('ice-candidate', (data) => {
           if (!isMounted) return;
-          if (peerConnectionRef.current) {
-            peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate)).catch(err => console.error("ICE error", err));
+
+          // data is the RTCIceCandidateInit object itself
+          const pc = peerConnectionRef.current;
+
+          if (pc && pc.remoteDescription) {
+            // Safe to add immediately
+            if (data) {
+              pc.addIceCandidate(new RTCIceCandidate(data)).catch(err => console.error("ICE error", err));
+            }
+          } else {
+            // Buffer it until setRemoteDescription is finished
+            pendingCandidates.current.push(data);
           }
         });
 
@@ -130,10 +185,14 @@ export default function VideoCall() {
           }
         });
 
+        // 2. EMIT JOIN ROOM LAST
+        socket.emit('join-room', roomId, user._id);
+        setCallStatus('Waiting for other participant...');
+
       } catch (err) {
-        console.error('Failed to start call:', err);
+        console.error('Failed to start call completely:', err);
         if (isMounted) {
-          setCallStatus('Failed to access camera/microphone');
+          setCallStatus('Failed to start call');
         }
       }
     };
@@ -150,12 +209,14 @@ export default function VideoCall() {
         peerConnectionRef.current = null;
       }
       const socket = getSocket();
-      socket.emit('leave-room', roomId, user._id);
-      socket.off('user-connected');
-      socket.off('offer');
-      socket.off('answer');
-      socket.off('ice-candidate');
-      socket.off('user-disconnected');
+      if (socket) {
+        socket.emit('leave-room', roomId, user._id);
+        socket.off('user-connected');
+        socket.off('offer');
+        socket.off('answer');
+        socket.off('ice-candidate');
+        socket.off('user-disconnected');
+      }
     };
   }, [roomId, user._id]);
 
@@ -188,7 +249,11 @@ export default function VideoCall() {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+      console.log('Connection state change:', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        setIsConnected(true);
+        setCallStatus('Connected');
+      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
         setIsConnected(false);
         setCallStatus('Connection lost');
       }
@@ -214,18 +279,31 @@ export default function VideoCall() {
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
       // Switch back to camera
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoTrack = stream.getVideoTracks()[0];
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const videoTrack = stream.getVideoTracks()[0];
 
-      const sender = peerConnectionRef.current
-        ?.getSenders()
-        .find((s) => s.track?.kind === 'video');
-      if (sender) sender.replaceTrack(videoTrack);
+        const sender = peerConnectionRef.current
+          ?.getSenders()
+          .find((s) => s.track?.kind === 'video');
+        if (sender) sender.replaceTrack(videoTrack);
 
-      localStreamRef.current.getVideoTracks().forEach((t) => t.stop());
-      localStreamRef.current.removeTrack(localStreamRef.current.getVideoTracks()[0]);
-      localStreamRef.current.addTrack(videoTrack);
-      if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+        localStreamRef.current.getVideoTracks().forEach((t) => t.stop());
+        localStreamRef.current.removeTrack(localStreamRef.current.getVideoTracks()[0]);
+        localStreamRef.current.addTrack(videoTrack);
+        if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
+      } catch (err) {
+        console.warn('Could not switch back to camera after screen share, likely device in use.', err);
+        const sender = peerConnectionRef.current
+          ?.getSenders()
+          .find((s) => s.track?.kind === 'video');
+        if (sender) peerConnectionRef.current.removeTrack(sender);
+        
+        localStreamRef.current.getVideoTracks().forEach((t) => {
+          t.stop();
+          localStreamRef.current.removeTrack(t);
+        });
+      }
 
       setIsScreenSharing(false);
     } else {
@@ -236,7 +314,21 @@ export default function VideoCall() {
         const sender = peerConnectionRef.current
           ?.getSenders()
           .find((s) => s.track?.kind === 'video');
-        if (sender) sender.replaceTrack(screenTrack);
+          
+        if (sender) {
+          sender.replaceTrack(screenTrack);
+        } else {
+          // If no video sender existed (blank stream fallback), we add it and renegotiate
+          peerConnectionRef.current.addTrack(screenTrack, screenStream);
+          const offer = await peerConnectionRef.current.createOffer();
+          await peerConnectionRef.current.setLocalDescription(offer);
+          const socket = getSocket();
+          socket.emit('offer', {
+            target: roomId,
+            caller: socket.id,
+            sdp: offer,
+          });
+        }
 
         if (localVideoRef.current) localVideoRef.current.srcObject = screenStream;
 
@@ -252,7 +344,16 @@ export default function VideoCall() {
   };
 
   const endCall = () => {
-    cleanup();
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+    }
+    const socket = getSocket();
+    if (socket) {
+      socket.emit('leave-room', roomId, user._id);
+    }
     navigate('/sessions');
   };
 
@@ -308,11 +409,10 @@ export default function VideoCall() {
       <div className="flex items-center justify-center gap-4 p-6 bg-gray-800/80 backdrop-blur">
         <button
           onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${
-            isMuted
-              ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
-              : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-          }`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isMuted
+            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
+            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+            }`}
           title={isMuted ? 'Unmute' : 'Mute'}
         >
           {isMuted ? '🔇' : '🎤'}
@@ -320,11 +420,10 @@ export default function VideoCall() {
 
         <button
           onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${
-            isVideoOff
-              ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
-              : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-          }`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isVideoOff
+            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
+            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+            }`}
           title={isVideoOff ? 'Turn On Camera' : 'Turn Off Camera'}
         >
           {isVideoOff ? '📷' : '🎥'}
@@ -332,11 +431,10 @@ export default function VideoCall() {
 
         <button
           onClick={toggleScreenShare}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${
-            isScreenSharing
-              ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
-              : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-          }`}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isScreenSharing
+            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
+            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+            }`}
           title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
         >
           🖥️
