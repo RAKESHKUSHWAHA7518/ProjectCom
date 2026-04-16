@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useSessionStore } from '../store/sessionStore';
 import { useReviewStore } from '../store/reviewStore';
+import toast from 'react-hot-toast';
 
 export default function Sessions() {
   const { user } = useAuthStore();
@@ -19,8 +20,9 @@ export default function Sessions() {
   const handleStatusUpdate = async (sessionId, status) => {
     try {
       await updateSessionStatus(sessionId, status);
+      toast.success(`Session ${status} successfully!`);
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to update session');
     }
   };
 
@@ -31,9 +33,9 @@ export default function Sessions() {
       setReviewModal(null);
       setReviewRating(5);
       setReviewComment('');
-      alert('Review submitted!');
+      toast.success('Review submitted! Thank you.');
     } catch (err) {
-      alert(err.message || 'Failed to submit review');
+      toast.error(err.message || 'Failed to submit review');
     }
   };
 
@@ -54,17 +56,17 @@ export default function Sessions() {
 
   return (
     <div className="py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Sessions</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Sessions</h1>
           <p className="mt-1 text-gray-500 dark:text-gray-400">Track your learning and mentoring sessions</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
           {['', 'pending', 'accepted', 'completed', 'cancelled'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+              className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
                 filter === f
                   ? 'bg-primary-600 text-white shadow-lg'
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useCommunityStore } from '../store/communityStore';
+import toast from 'react-hot-toast';
 
 export default function Community() {
   const { id } = useParams();
@@ -60,8 +61,9 @@ export default function Community() {
       await createCommunity(newCommunity.name, newCommunity.description, newCommunity.category, newCommunity.icon);
       setShowCreateModal(false);
       setNewCommunity({ name: '', description: '', category: '', icon: '💬' });
+      toast.success('Community created!');
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || 'Failed to create community');
     }
   };
 
@@ -69,14 +71,14 @@ export default function Community() {
   if (!id) {
     return (
       <div className="py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Community Spaces</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Community Spaces</h1>
             <p className="mt-1 text-gray-500 dark:text-gray-400">Join skill-specific communities and connect with others</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
+            className="self-start sm:self-auto px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
           >
             + Create Community
           </button>

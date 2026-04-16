@@ -76,10 +76,10 @@ export default function Leaderboard() {
       </div>
 
       {/* Category Filter */}
-      <div className="flex flex-wrap justify-center gap-2 mb-8">
+      <div className="flex gap-2 overflow-x-auto pb-2 px-1 mb-8 scrollbar-hide">
         <button
           onClick={() => setCategory('')}
-          className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+          className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
             !category ? 'bg-primary-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
@@ -89,7 +89,7 @@ export default function Leaderboard() {
           <button
             key={cat.value}
             onClick={() => setCategory(cat.value)}
-            className={`px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+            className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
               category === cat.value ? 'bg-primary-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >

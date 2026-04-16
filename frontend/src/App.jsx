@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -118,7 +119,7 @@ function Home() {
         <motion.h1
           variants={fadeInUp}
           custom={0}
-          className="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]"
+          className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]"
         >
           <span className="text-gray-900 dark:text-white">Exchange Skills.</span>{' '}
           <span className="bg-gradient-to-r from-primary-500 via-indigo-500 to-accent-500 bg-clip-text text-transparent">
@@ -560,6 +561,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
+        <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
         <SocketManager />
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

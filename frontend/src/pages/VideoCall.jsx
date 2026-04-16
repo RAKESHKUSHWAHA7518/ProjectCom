@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { connectSocket, getSocket } from '../utils/socket';
+import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PhoneOff } from 'lucide-react';
 
 export default function VideoCall() {
   const { roomId } = useParams();
@@ -21,6 +22,10 @@ export default function VideoCall() {
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState('Connecting...');
+  const [callDuration, setCallDuration] = useState(0);
+
+  const formatTime = (s) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const ICE_SERVERS = {
     iceServers: [
@@ -220,6 +225,13 @@ export default function VideoCall() {
     };
   }, [roomId, user._id]);
 
+  // Call duration timer
+  useEffect(() => {
+    if (!isConnected) return;
+    const interval = setInterval(() => setCallDuration((d) => d + 1), 1000);
+    return () => clearInterval(interval);
+  }, [isConnected]);
+
   const createPeerConnection = async (socket, targetId) => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnectionRef.current = pc;
@@ -358,20 +370,27 @@ export default function VideoCall() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[radial-gradient(ellipse_at_top,_#1a1f35_0%,_#0d1117_70%)] flex flex-col">
+
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-6 py-3 bg-gray-800/80 backdrop-blur">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-black/30 backdrop-blur-sm border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+          <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50' : 'bg-amber-400'}`} />
           <span className="text-sm text-gray-300 font-medium">{callStatus}</span>
+          {isConnected && (
+            <span className="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">
+              {formatTime(callDuration)}
+            </span>
+          )}
         </div>
-        <span className="text-sm text-gray-500">Room: {roomId?.slice(0, 8)}...</span>
+        <span className="text-xs text-gray-600 bg-white/5 px-3 py-1 rounded-full">#{roomId?.slice(0, 8)}</span>
       </div>
 
       {/* Video Area */}
-      <div className="flex-1 flex items-center justify-center p-4 gap-4 relative">
-        {/* Remote Video (large) */}
-        <div className="relative w-full h-full max-w-5xl bg-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-4 relative overflow-hidden">
+
+        {/* Remote Video */}
+        <div className="relative w-full h-full max-w-5xl bg-gray-900/80 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
           <video
             ref={remoteVideoRef}
             autoPlay
@@ -379,17 +398,24 @@ export default function VideoCall() {
             className="w-full h-full object-cover"
           />
           {!isConnected && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900/60">
               <div className="text-center">
-                <div className="w-16 h-16 border-4 border-gray-600 border-t-primary-400 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-400">Waiting for participant...</p>
+                <div className="w-16 h-16 border-4 border-gray-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-gray-400 text-sm">Waiting for participant...</p>
               </div>
+            </div>
+          )}
+          {/* Participant name overlay */}
+          {isConnected && (
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-full">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              <span className="text-white text-xs font-medium">Participant</span>
             </div>
           )}
         </div>
 
-        {/* Local Video (small overlay) */}
-        <div className="absolute bottom-8 right-8 w-48 h-36 bg-gray-800 rounded-xl overflow-hidden shadow-lg border-2 border-gray-700/50 hover:scale-105 transition-transform cursor-move">
+        {/* Local Video PiP */}
+        <div className="absolute bottom-20 right-3 sm:bottom-6 sm:right-6 w-28 h-20 sm:w-44 sm:h-32 bg-gray-900 rounded-xl overflow-hidden shadow-xl border border-white/10 hover:scale-105 transition-transform">
           <video
             ref={localVideoRef}
             autoPlay
@@ -398,55 +424,82 @@ export default function VideoCall() {
             className="w-full h-full object-cover"
           />
           {isVideoOff && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-              <span className="text-2xl">🙈</span>
+            <div className="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center gap-1">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-lg font-bold">
+                {user?.name?.charAt(0)?.toUpperCase() ?? 'Y'}
+              </div>
+              <span className="text-[10px] text-gray-500">Camera Off</span>
             </div>
           )}
+          <div className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-md">
+            You
+          </div>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-4 p-6 bg-gray-800/80 backdrop-blur">
-        <button
-          onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isMuted
-            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
-            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-            }`}
-          title={isMuted ? 'Unmute' : 'Mute'}
-        >
-          {isMuted ? '🔇' : '🎤'}
-        </button>
+      <div className="flex items-center justify-center gap-3 sm:gap-5 px-4 py-4 sm:py-6 bg-black/40 backdrop-blur-sm border-t border-white/5">
 
-        <button
-          onClick={toggleVideo}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isVideoOff
-            ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
-            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+        {/* Mute */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button
+            onClick={toggleMute}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 ${
+              isMuted
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
+                : 'bg-white/10 text-gray-200 hover:bg-white/20'
             }`}
-          title={isVideoOff ? 'Turn On Camera' : 'Turn Off Camera'}
-        >
-          {isVideoOff ? '📷' : '🎥'}
-        </button>
+            title={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
+          <span className="text-[10px] text-gray-500">{isMuted ? 'Unmute' : 'Mute'}</span>
+        </div>
 
-        <button
-          onClick={toggleScreenShare}
-          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl transition-all ${isScreenSharing
-            ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
-            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+        {/* Camera */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button
+            onClick={toggleVideo}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 ${
+              isVideoOff
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 hover:bg-red-600'
+                : 'bg-white/10 text-gray-200 hover:bg-white/20'
             }`}
-          title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
-        >
-          🖥️
-        </button>
+            title={isVideoOff ? 'Turn On Camera' : 'Turn Off Camera'}
+          >
+            {isVideoOff ? <VideoOff size={20} /> : <Video size={20} />}
+          </button>
+          <span className="text-[10px] text-gray-500">{isVideoOff ? 'Start Video' : 'Stop Video'}</span>
+        </div>
 
-        <button
-          onClick={endCall}
-          className="w-14 h-14 bg-red-600 text-white rounded-full flex items-center justify-center text-xl shadow-lg shadow-red-600/30 hover:bg-red-700 transition-all hover:scale-110"
-          title="End Call"
-        >
-          📞
-        </button>
+        {/* Screen Share */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button
+            onClick={toggleScreenShare}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 ${
+              isScreenSharing
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-600'
+                : 'bg-white/10 text-gray-200 hover:bg-white/20'
+            }`}
+            title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+          >
+            {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
+          </button>
+          <span className="text-[10px] text-gray-500">{isScreenSharing ? 'Stop Share' : 'Share'}</span>
+        </div>
+
+        {/* End Call */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button
+            onClick={endCall}
+            className="w-14 h-14 sm:w-16 sm:h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-red-600/40 hover:bg-red-700 transition-all hover:scale-110"
+            title="End Call"
+          >
+            <PhoneOff size={22} />
+          </button>
+          <span className="text-[10px] text-red-400">End Call</span>
+        </div>
+
       </div>
     </div>
   );

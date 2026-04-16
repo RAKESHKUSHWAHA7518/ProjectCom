@@ -4,6 +4,7 @@ import { useSkillStore } from '../store/skillStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatStore';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -65,7 +66,7 @@ export default function Explore() {
       const conv = await getOrCreateConversation(mentorId);
       navigate(`/chat/${conv._id}`);
     } catch (err) {
-      alert('Failed to start conversation');
+      toast.error('Failed to start conversation');
     }
   };
 
@@ -87,16 +88,16 @@ export default function Explore() {
       });
       const data = await response.json();
       if (response.ok) {
-        alert('Session booked successfully!');
+        toast.success('Session booked successfully!');
         setShowBooking(null);
         setBookingDate('');
         setBookingNotes('');
         setBookingSkill('');
       } else {
-        alert(data.message || 'Failed to book session');
+        toast.error(data.message || 'Failed to book session');
       }
     } catch (err) {
-      alert('Failed to book session');
+      toast.error('Failed to book session');
     }
   };
 
@@ -149,11 +150,11 @@ export default function Explore() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-4 items-end">
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Min Rating</label>
               <select
-                className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
               >
@@ -166,7 +167,7 @@ export default function Explore() {
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
               <select
-                className="px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
@@ -176,21 +177,23 @@ export default function Explore() {
                 <option value="sessions">Most Experienced</option>
               </select>
             </div>
-            <button
-              type="submit"
-              className="px-6 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
-            >
-              🔍 Search
-            </button>
-            {(search || category || selectedSkill || minRating) && (
+            <div className="sm:col-span-2 lg:col-auto flex gap-2">
               <button
-                type="button"
-                onClick={() => { setSearch(''); setCategory(''); setSelectedSkill(''); setMinRating(''); setSortBy(''); setPage(1); fetchExplore(); }}
-                className="px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                type="submit"
+                className="flex-1 lg:flex-none px-6 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
               >
-                Clear Filters
+                🔍 Search
               </button>
-            )}
+              {(search || category || selectedSkill || minRating) && (
+                <button
+                  type="button"
+                  onClick={() => { setSearch(''); setCategory(''); setSelectedSkill(''); setMinRating(''); setSortBy(''); setPage(1); fetchExplore(); }}
+                  className="flex-1 lg:flex-none px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
@@ -253,24 +256,24 @@ export default function Explore() {
                   ))}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={() => setShowBooking({ user: mentor, skills: teachSkills })}
-                    className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:shadow-lg transition-all"
+                    className="w-full sm:flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:shadow-lg transition-all"
                   >
                     Book Session
                   </button>
                   <button
                     onClick={() => handleStartChat(mentor._id)}
-                    className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
+                    className="w-full sm:flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
                   >
                     Message
                   </button>
                   <button
                     onClick={() => navigate(`/profile/${mentor._id}`)}
-                    className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                    className="w-full sm:flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                   >
-                    View
+                    View Profile
                   </button>
                 </div>
               </div>

@@ -127,9 +127,9 @@ export default function Profile() {
           </div>
 
           <div className="flex-1">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
                 {profile.location && <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">📍 {profile.location}</p>}
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-yellow-500 text-lg">{'⭐'.repeat(Math.round(profile.rating || 0))}</span>
@@ -139,14 +139,14 @@ export default function Profile() {
               {isOwnProfile ? (
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                  className="self-start sm:self-auto px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 >
                   {isEditing ? 'Cancel' : '✏️ Edit Profile'}
                 </button>
               ) : (
                 <button
                   onClick={handleStartChat}
-                  className="px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition"
+                  className="self-start sm:self-auto px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition"
                 >
                   💬 Message
                 </button>

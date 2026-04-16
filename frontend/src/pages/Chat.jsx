@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { connectSocket, getSocket } from '../utils/socket';
+import { Send, ArrowLeft } from 'lucide-react';
 
 export default function Chat() {
   const { id: conversationId } = useParams();
@@ -151,13 +152,13 @@ export default function Chat() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className={`${!conversationId ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-gray-50 dark:bg-gray-950`}>
         {conversationId && activeConversation ? (
           <>
             {/* Chat Header */}
             <div className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
-              <button onClick={() => navigate('/chat')} className="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mr-2">
-                ← Back
+              <button onClick={() => navigate('/chat')} className="md:hidden flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mr-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+                <ArrowLeft size={18} />
               </button>
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-indigo-500 text-white rounded-full flex items-center justify-center font-bold">
                 {getOtherUser(activeConversation)?.name?.charAt(0) || '?'}
@@ -204,9 +205,10 @@ export default function Chat() {
                 <button
                   type="submit"
                   disabled={!newMessage.trim()}
-                  className="px-6 py-3 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50"
+                  className="px-5 py-3 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  Send
+                  <Send size={16} />
+                  <span className="hidden sm:inline">Send</span>
                 </button>
               </div>
             </form>

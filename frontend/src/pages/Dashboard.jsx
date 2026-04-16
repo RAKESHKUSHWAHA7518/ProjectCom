@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuthStore();
@@ -51,17 +52,17 @@ export default function Dashboard() {
       });
       const data = await response.json();
       if (response.ok) {
-        alert('Session booked successfully!');
+        toast.success('Session booked successfully!');
         setShowBooking(null);
         setBookingDate('');
         setBookingNotes('');
         setBookingSkill('');
         fetchSessions();
       } else {
-        alert(data.message || 'Failed to book session');
+        toast.error(data.message || 'Failed to book session');
       }
     } catch (err) {
-      alert('Failed to book session');
+      toast.error('Failed to book session');
     }
   };
 
@@ -72,12 +73,12 @@ export default function Dashboard() {
   return (
     <div className="py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back, {user?.name} 👋</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Welcome back, {user?.name} 👋</h1>
           <p className="mt-1 text-gray-500 dark:text-gray-400">Here's what's happening with your skill portfolio</p>
         </div>
-        <Link to="/profile" className="px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
+        <Link to="/profile" className="self-start sm:self-auto px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
           View Profile
         </Link>
       </div>
