@@ -5,11 +5,12 @@ import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import toast from 'react-hot-toast';
+import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuthStore();
   const { skills, matches, fetchMySkills, addSkill, deleteSkill, fetchMatches } = useSkillStore();
-  const { sessions, fetchSessions } = useSessionStore();
+  const { sessions, fetchSessions, updateSessionStatus } = useSessionStore();
 
   const [newSkill, setNewSkill] = useState({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
   const [customSkillName, setCustomSkillName] = useState('');
@@ -128,7 +129,7 @@ export default function Dashboard() {
                 >
                   <option value="">Select Category</option>
                   {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.icon} {cat.value}</option>
+                    <option key={cat.value} value={cat.value}>{cat.value}</option>
                   ))}
                 </select>
               </div>
@@ -144,7 +145,7 @@ export default function Dashboard() {
                   {newSkill.category && SKILLS_BY_CATEGORY[newSkill.category]?.map((skill) => (
                     <option key={skill} value={skill}>{skill}</option>
                   ))}
-                  {newSkill.category && <option value="__custom__">✏️ Type custom skill...</option>}
+                  {newSkill.category && <option value="__custom__">Type custom skill...</option>}
                 </select>
               </div>
             </div>
@@ -162,14 +163,14 @@ export default function Dashboard() {
 
             <div className="flex gap-2">
               <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
-                <option value="teach">🎓 I want to TEACH</option>
-                <option value="learn">📚 I want to LEARN</option>
+                <option value="teach">I want to TEACH</option>
+                <option value="learn">I want to LEARN</option>
               </select>
               <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
-                <option value="beginner">🌱 Beginner</option>
-                <option value="intermediate">🌿 Intermediate</option>
-                <option value="advanced">🌳 Advanced</option>
-                <option value="expert">⭐ Expert</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="expert">Expert</option>
               </select>
               <button
                 type="submit"
@@ -228,8 +229,8 @@ export default function Dashboard() {
               <Link to="/sessions" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">View All →</Link>
             </div>
             {recentSessions.length === 0 ? (
-              <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500">
-                <div className="text-3xl mb-2">📅</div>
+              <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500 flex flex-col items-center">
+                <Calendar className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
                 <p className="text-sm">No sessions yet. Find mentors on the Explore page!</p>
               </div>
             ) : (
@@ -246,14 +247,26 @@ export default function Dashboard() {
                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{other?.name}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{session.skill?.name} • {new Date(session.scheduledAt).toLocaleDateString()}</p>
                       </div>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-lg ${
-                        session.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' :
-                        session.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' :
-                        session.status === 'accepted' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' :
-                        'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'
-                      }`}>
-                        {session.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-lg ${
+                          session.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' :
+                          session.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' :
+                          session.status === 'accepted' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400' :
+                          'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'
+                        }`}>
+                          {session.status}
+                        </span>
+                        {session.status === 'pending' && isMentor && (
+                          <div className="flex gap-1">
+                            <button onClick={async () => { await updateSessionStatus(session._id, 'accepted'); toast.success('Session accepted'); }} className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-md" title="Accept">
+                              <Check className="w-4 h-4" />
+                            </button>
+                            <button onClick={async () => { await updateSessionStatus(session._id, 'rejected'); toast.error('Session rejected'); }} className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md" title="Reject">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -271,8 +284,8 @@ export default function Dashboard() {
 
             <div className="space-y-4">
               {matches.length === 0 ? (
-                <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500">
-                  <div className="text-3xl mb-2">🔍</div>
+                <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500 flex flex-col items-center">
+                  <Search className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
                   <p className="text-sm">No mentors found. Add skills you want to learn!</p>
                 </div>
               ) : (
@@ -287,8 +300,8 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
                         <h3 className="font-bold text-gray-900 dark:text-white">{match.user.name}</h3>
-                        <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 text-xs font-semibold px-2 py-0.5 rounded flex items-center">
-                          ⭐ {match.user.rating || 'New'}
+                        <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 text-xs font-semibold px-2 py-0.5 rounded flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-current" /> {match.user.rating || 'New'}
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{match.user.bio || 'Ready to share knowledge!'}</p>
@@ -317,13 +330,13 @@ export default function Dashboard() {
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         {[
-          { to: '/explore', icon: '🔍', label: 'Find Mentors', color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30' },
-          { to: '/chat', icon: '💬', label: 'Messages', color: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' },
-          { to: '/leaderboard', icon: '🏆', label: 'Leaderboard', color: 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' },
-          { to: '/community', icon: '🌐', label: 'Communities', color: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30' },
+          { to: '/explore', icon: Search, label: 'Find Mentors', color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30' },
+          { to: '/chat', icon: MessageCircle, label: 'Messages', color: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' },
+          { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', color: 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' },
+          { to: '/community', icon: Globe, label: 'Communities', color: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30' },
         ].map((link) => (
-          <Link key={link.to} to={link.to} className={`p-4 bg-gradient-to-br ${link.color} rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 text-center`}>
-            <div className="text-2xl mb-1">{link.icon}</div>
+          <Link key={link.to} to={link.to} className={`p-4 bg-gradient-to-br ${link.color} rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col items-center justify-center`}>
+            <div className="mb-2"><link.icon className="w-7 h-7 text-gray-700 dark:text-gray-300" strokeWidth={1.5} /></div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{link.label}</p>
           </Link>
         ))}
@@ -355,7 +368,7 @@ export default function Dashboard() {
                 <textarea className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" rows="3" placeholder="What would you like to learn?" value={bookingNotes} onChange={(e) => setBookingNotes(e.target.value)} />
               </div>
               <div className="flex items-center p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300">
-                <span className="mr-2">💰</span> Cost: 1 credit · You have {user?.skillCredits || 0}
+                <Coins className="w-5 h-5 mr-2 text-amber-500" strokeWidth={2} /> Cost: 1 credit · You have {user?.skillCredits || 0}
               </div>
             </div>
 

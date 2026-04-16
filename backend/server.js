@@ -129,6 +129,10 @@ io.on('connection', (socket) => {
     socket.to(incoming.target).emit('ice-candidate', incoming.candidate);
   });
 
+  socket.on('video-chat-message', (payload) => {
+    socket.to(payload.target).emit('video-chat-message', payload.message);
+  });
+
   // --- NOTIFICATION EVENTS ---
   socket.on('send-notification', (data) => {
     if (data.userId && onlineUsers.has(data.userId)) {

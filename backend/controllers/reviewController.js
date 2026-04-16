@@ -97,22 +97,22 @@ async function checkAndAwardBadges(user) {
   const badgesToCheck = [];
 
   if (user.numReviews >= 1 && user.rating >= 4.5) {
-    badgesToCheck.push({ type: 'highly_rated', label: 'Highly Rated', icon: '⭐' });
+    badgesToCheck.push({ type: 'highly_rated', label: 'Highly Rated', icon: 'Star' });
   }
   if (user.totalSessionsAsMentor >= 1) {
-    badgesToCheck.push({ type: 'first_session', label: 'First Session', icon: '🎯' });
+    badgesToCheck.push({ type: 'first_session', label: 'First Session', icon: 'Target' });
   }
   if (user.totalSessionsAsMentor >= 5) {
-    badgesToCheck.push({ type: 'five_sessions', label: '5 Sessions Done', icon: '🔥' });
+    badgesToCheck.push({ type: 'five_sessions', label: '5 Sessions Done', icon: 'Flame' });
   }
   if (user.totalSessionsAsMentor >= 10) {
-    badgesToCheck.push({ type: 'ten_sessions', label: '10 Sessions Done', icon: '💎' });
+    badgesToCheck.push({ type: 'ten_sessions', label: '10 Sessions Done', icon: 'Gem' });
   }
   if (user.totalSessionsAsMentor >= 10 && user.rating >= 4.8) {
-    badgesToCheck.push({ type: 'top_mentor', label: 'Top Mentor', icon: '👑' });
+    badgesToCheck.push({ type: 'top_mentor', label: 'Top Mentor', icon: 'Crown' });
   }
   if (user.totalSessionsAsLearner >= 5) {
-    badgesToCheck.push({ type: 'quick_learner', label: 'Quick Learner', icon: '🚀' });
+    badgesToCheck.push({ type: 'quick_learner', label: 'Quick Learner', icon: 'Rocket' });
   }
 
   for (const badge of badgesToCheck) {

@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
 import { useChatStore } from '../store/chatStore';
+import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket } from 'lucide-react';
+
+const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -99,8 +102,24 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+      <div className="py-8 max-w-4xl mx-auto">
+        <div className="relative p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gray-200 dark:bg-gray-800" />
+          <div className="relative flex flex-col md:flex-row items-start gap-6 pt-16">
+            <div className="w-24 h-24 bg-gray-300 dark:bg-gray-700 rounded-2xl shrink-0" />
+            <div className="flex-1 w-full space-y-3 mt-2">
+              <div className="h-6 bg-gray-200 dark:bg-gray-800 rounded w-1/3" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/4" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/5" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+            <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+            <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+            <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+            <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -130,25 +149,29 @@ export default function Profile() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{profile.name}</h1>
-                {profile.location && <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">📍 {profile.location}</p>}
+                {profile.location && <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1"><MapPin className="w-3.5 h-3.5" /> {profile.location}</p>}
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-yellow-500 text-lg">{'⭐'.repeat(Math.round(profile.rating || 0))}</span>
+                  <div className="flex">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(profile.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                    ))}
+                  </div>
                   <span className="text-sm text-gray-500 dark:text-gray-400">{profile.rating?.toFixed(1) || '0.0'} ({profile.numReviews || 0} reviews)</span>
                 </div>
               </div>
               {isOwnProfile ? (
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className="self-start sm:self-auto px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                  className="self-start sm:self-auto px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1.5"
                 >
-                  {isEditing ? 'Cancel' : '✏️ Edit Profile'}
+                  <Edit3 className="w-4 h-4" /> {isEditing ? 'Cancel' : 'Edit Profile'}
                 </button>
               ) : (
                 <button
                   onClick={handleStartChat}
-                  className="self-start sm:self-auto px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition"
+                  className="self-start sm:self-auto px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
                 >
-                  💬 Message
+                  <MessageCircle className="w-4 h-4" /> Message
                 </button>
               )}
             </div>
@@ -178,9 +201,14 @@ export default function Profile() {
 
         {/* Profile Completeness */}
         {isOwnProfile && (
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl group relative">
             <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium text-gray-700 dark:text-gray-300">Profile Completeness</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                Profile Completeness
+                {completeness < 100 && (
+                  <span className="text-xs font-normal text-gray-500">(Hover for tips)</span>
+                )}
+              </span>
               <span className="font-bold text-primary-600 dark:text-primary-400">{completeness}%</span>
             </div>
             <div className="w-full h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -189,6 +217,19 @@ export default function Profile() {
                 style={{ width: `${completeness}%` }}
               />
             </div>
+            {completeness < 100 && (
+              <div className="absolute top-full left-0 mt-2 w-64 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 text-xs">
+                <p className="font-semibold mb-1 text-gray-900 dark:text-gray-100">To reach 100%:</p>
+                <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-gray-400">
+                  {!profile.name && <li>Add your name</li>}
+                  {!profile.bio && <li>Add a short bio</li>}
+                  {!profile.location && <li>Add your location</li>}
+                  {!profile.avatar && <li>Upload an avatar</li>}
+                  {skills.filter(s => s.type === 'teach').length === 0 && <li>Add skills you can teach</li>}
+                  {skills.filter(s => s.type === 'learn').length === 0 && <li>Add skills you want to learn</li>}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -258,19 +299,29 @@ export default function Profile() {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Badges & Achievements</h2>
           {profile.badges && profile.badges.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
-              {profile.badges.map((badge, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-100 dark:border-amber-800 rounded-xl">
-                  <span className="text-2xl">{badge.icon || '🏆'}</span>
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900 dark:text-white">{badge.label || badge.type}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{badge.earnedAt ? new Date(badge.earnedAt).toLocaleDateString() : ''}</p>
+              {profile.badges.map((badge, i) => {
+                const BadgeIcon = ICON_MAP[badge.icon] || Trophy;
+                const isEmoji = badge.icon && !ICON_MAP[badge.icon];
+                return (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border border-amber-100 dark:border-amber-800 rounded-xl">
+                    {isEmoji ? (
+                      <span className="text-2xl">{badge.icon}</span>
+                    ) : (
+                      <div className="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-lg text-amber-600 dark:text-amber-500 shrink-0">
+                        <BadgeIcon className="w-5 h-5" strokeWidth={2} />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-semibold text-sm text-gray-900 dark:text-white leading-tight">{badge.label || badge.type}</p>
+                      {badge.earnedAt && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{new Date(badge.earnedAt).toLocaleDateString()}</p>}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="py-8 text-center text-gray-400 dark:text-gray-500">
-              <div className="text-4xl mb-2">🏅</div>
+            <div className="py-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
+              <Medal className="w-12 h-12 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
               <p className="text-sm">No badges earned yet. Complete sessions to earn badges!</p>
             </div>
           )}
@@ -292,7 +343,11 @@ export default function Profile() {
                     <span className="font-medium text-gray-900 dark:text-white text-sm">{review.reviewer?.name || 'Anonymous'}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-yellow-500">{'⭐'.repeat(review.rating)}</span>
+                    <div className="flex">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
+                      ))}
+                    </div>
                     <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">{new Date(review.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>

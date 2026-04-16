@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { connectSocket, getSocket } from '../utils/socket';
-import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PhoneOff, MessageSquare, Send, X } from 'lucide-react';
 
 export default function VideoCall() {
   const { roomId } = useParams();
@@ -23,6 +23,12 @@ export default function VideoCall() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState('Connecting...');
   const [callDuration, setCallDuration] = useState(0);
+
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const scrollRef = useRef(null);
 
   const formatTime = (s) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -158,6 +164,17 @@ export default function VideoCall() {
           }
         });
 
+        socket.on('video-chat-message', (data) => {
+          if (!isMounted) return;
+          setMessages((prev) => [...prev, data]);
+          setIsChatOpen((prevChatOpen) => {
+            if (!prevChatOpen) {
+              setUnreadCount((c) => c + 1);
+            }
+            return prevChatOpen;
+          });
+        });
+
         // Receive ICE candidate
         socket.on('ice-candidate', (data) => {
           if (!isMounted) return;
@@ -221,9 +238,36 @@ export default function VideoCall() {
         socket.off('answer');
         socket.off('ice-candidate');
         socket.off('user-disconnected');
+        socket.off('video-chat-message');
       }
     };
   }, [roomId, user._id]);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  useEffect(() => {
+    if (isChatOpen) setUnreadCount(0);
+  }, [isChatOpen]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+    const msg = {
+      id: Date.now().toString(),
+      senderId: user._id,
+      senderName: user.name,
+      text: newMessage,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, msg]);
+    const socket = getSocket();
+    if (socket) {
+       socket.emit('video-chat-message', { target: roomId, message: msg });
+    }
+    setNewMessage('');
+  };
 
   // Call duration timer
   useEffect(() => {
@@ -386,8 +430,11 @@ export default function VideoCall() {
         <span className="text-xs text-gray-600 bg-white/5 px-3 py-1 rounded-full">#{roomId?.slice(0, 8)}</span>
       </div>
 
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden relative">
+
       {/* Video Area */}
-      <div className="flex-1 flex items-center justify-center p-3 sm:p-4 relative overflow-hidden">
+      <div className={`flex-1 flex items-center justify-center p-3 sm:p-4 relative transition-all duration-300 ${isChatOpen ? 'md:pr-[320px]' : ''}`}>
 
         {/* Remote Video */}
         <div className="relative w-full h-full max-w-5xl bg-gray-900/80 rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
@@ -435,6 +482,58 @@ export default function VideoCall() {
             You
           </div>
         </div>
+      </div>
+
+      {/* Chat Panel */}
+      <div className={`absolute right-0 top-0 bottom-0 w-full md:w-[320px] bg-gray-950 border-l border-white/5 flex flex-col transform transition-transform duration-300 z-40 ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-4 border-b border-white/5 flex items-center justify-between bg-gray-900">
+          <h3 className="text-white font-medium flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-emerald-400" />
+            In-Call Chat
+          </h3>
+          <button onClick={() => setIsChatOpen(false)} className="text-gray-400 hover:text-white transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollRef}>
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-gray-500">
+              <MessageSquare className="w-10 h-10 mb-2 opacity-50" />
+              <p className="text-sm">Say hi to everyone!</p>
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const isMe = msg.senderId === user._id;
+              return (
+                <div key={msg.id} className={`flex flex-col max-w-[85%] ${isMe ? 'items-end self-end ml-auto' : 'items-start'}`}>
+                  <span className="text-[10px] text-gray-500 mb-0.5 px-1">{isMe ? 'You' : msg.senderName}</span>
+                  <div className={`px-3 py-2 rounded-xl text-sm ${isMe ? 'bg-emerald-600 text-white rounded-tr-sm' : 'bg-gray-800 text-gray-200 rounded-tl-sm'}`}>
+                    {msg.text}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="p-3 bg-gray-900 border-t border-white/5">
+          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+            <input
+              type="text"
+              className="flex-1 bg-gray-800/80 border border-white/5 text-sm text-white rounded-full px-4 py-2.5 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 placeholder-gray-500"
+              placeholder="Message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!newMessage.trim()}
+              className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-500 transition"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        </div>
+      </div>
       </div>
 
       {/* Controls */}
@@ -486,6 +585,27 @@ export default function VideoCall() {
             {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
           </button>
           <span className="text-[10px] text-gray-500">{isScreenSharing ? 'Stop Share' : 'Share'}</span>
+        </div>
+
+        {/* Chat Button */}
+        <div className="flex flex-col items-center gap-1.5">
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 relative ${
+              isChatOpen
+                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-600'
+                : 'bg-white/10 text-gray-200 hover:bg-white/20'
+            }`}
+            title="Chat"
+          >
+            <MessageSquare size={20} />
+            {unreadCount > 0 && !isChatOpen && (
+              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full border border-gray-900 shrink-0">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <span className="text-[10px] text-gray-500">Chat</span>
         </div>
 
         {/* End Call */}
