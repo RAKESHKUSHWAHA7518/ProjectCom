@@ -97,14 +97,14 @@ export const getLeaderboard = async (req, res) => {
 
     if (type === 'learners') {
       pipeline.push(
-        { $match: { totalSessionsAsLearner: { $gt: 0 } } },
+        { $match: { totalSessionsAsLearner: { $gte: 0 } } },
         { $sort: { totalSessionsAsLearner: -1 } },
         { $limit: 50 },
         { $project: { password: 0 } }
       );
     } else {
       pipeline.push(
-        { $match: { numReviews: { $gt: 0 } } },
+        { $match: { numReviews: { $gte: 0 } } },
         { $sort: { rating: -1, numReviews: -1 } },
         { $limit: 50 },
         { $project: { password: 0 } }
