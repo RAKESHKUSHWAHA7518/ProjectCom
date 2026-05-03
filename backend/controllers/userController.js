@@ -23,12 +23,16 @@ export const updateProfile = async (req, res) => {
     if (socialLinks) user.socialLinks = { ...user.socialLinks, ...socialLinks };
     if (avatar !== undefined) user.avatar = avatar;
 
-    // Recalculate profile completeness
-    const teachSkills = await Skill.countDocuments({ user: req.user.id, type: 'teach' });
-    const learnSkills = await Skill.countDocuments({ user: req.user.id, type: 'learn' });
+    // Recalculate profile completeness concurrently
+    const [teachSkills, learnSkills] = await Promise.all([
+      Skill.countDocuments({ user: req.user.id, type: 'teach' }),
+      Skill.countDocuments({ user: req.user.id, type: 'learn' })
+    ]);
+    
     user.profileComplete = !!(user.bio && user.location && teachSkills > 0 && learnSkills > 0);
 
     const updatedUser = await user.save();
+    
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
@@ -66,11 +70,14 @@ export const getPublicProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const skills = await Skill.find({ user: req.params.id });
-    const reviews = await Review.find({ reviewee: req.params.id })
-      .populate('reviewer', 'name avatar')
-      .sort('-createdAt')
-      .limit(10);
+    // Fetch skills and reviews concurrently
+    const [skills, reviews] = await Promise.all([
+      Skill.find({ user: req.params.id }),
+      Review.find({ reviewee: req.params.id })
+        .populate('reviewer', 'name avatar')
+        .sort('-createdAt')
+        .limit(10)
+    ]);
 
     res.json({ user, skills, reviews });
   } catch (error) {
@@ -88,8 +95,6 @@ export const getLeaderboard = async (req, res) => {
     let pipeline = [];
 
     if (category) {
-       // Filter category depending on type if you really want, but let's just 
-       // apply category to both, or simply keep original behavior
        const skillTypeFilter = type === 'learners' ? 'learn' : 'teach';
        const skillUsers = await Skill.find({ type: skillTypeFilter, category: new RegExp(category, 'i') }).distinct('user');
        pipeline.push({ $match: { _id: { $in: skillUsers } } });
@@ -116,14 +121,28 @@ export const getLeaderboard = async (req, res) => {
     // Populate badges for each user
     const populated = await User.populate(topUsers, { path: 'badges' });
 
+    // Extract all user IDs to fetch skills in a single query (fixes N+1 problem)
+    const userIds = populated.map(u => u._id);
+    
+    // Fetch all skills for these users
+    const allSkills = await Skill.find({ 
+      user: { $in: userIds }, 
+      type: type === 'learners' ? 'learn' : 'teach' 
+    });
+
+    // Group skills by user ID
+    const skillsByUser = allSkills.reduce((acc, skill) => {
+      const userIdStr = skill.user.toString();
+      if (!acc[userIdStr]) acc[userIdStr] = [];
+      acc[userIdStr].push(skill);
+      return acc;
+    }, {});
+
     // Attach relevant skills to each user
-    const results = await Promise.all(
-      populated.map(async (u) => {
-        const skills = await Skill.find({ user: u._id, type: type === 'learners' ? 'learn' : 'teach' });
-        // Use teachSkills for the field name so frontend still works without changing the property name, or name it accordingly
-        return { ...u, teachSkills: skills };
-      })
-    );
+    const results = populated.map((u) => {
+      const userIdStr = u._id.toString();
+      return { ...u, teachSkills: skillsByUser[userIdStr] || [] };
+    });
 
     res.json(results);
   } catch (error) {
@@ -171,21 +190,39 @@ export const exploreUsers = async (req, res) => {
     if (sortBy === 'reviews') sortOption = { numReviews: -1 };
     if (sortBy === 'sessions') sortOption = { totalSessionsAsMentor: -1 };
 
-    const totalCount = await User.countDocuments(userQuery);
-    const users = await User.find(userQuery)
-      .select('-password')
-      .sort(sortOption)
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .populate('badges');
+    // Run count and find queries concurrently
+    const [totalCount, users] = await Promise.all([
+      User.countDocuments(userQuery),
+      User.find(userQuery)
+        .select('-password')
+        .sort(sortOption)
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .populate('badges')
+    ]);
+
+    // Extract all user IDs
+    const foundUserIds = users.map(u => u._id);
+
+    // Fetch all teach skills for these users in a single query (fixes N+1 problem)
+    const allSkills = await Skill.find({ 
+      user: { $in: foundUserIds }, 
+      type: 'teach' 
+    });
+
+    // Group skills by user ID
+    const skillsByUser = allSkills.reduce((acc, skill) => {
+      const userIdStr = skill.user.toString();
+      if (!acc[userIdStr]) acc[userIdStr] = [];
+      acc[userIdStr].push(skill);
+      return acc;
+    }, {});
 
     // Attach teach skills
-    const results = await Promise.all(
-      users.map(async (u) => {
-        const skills = await Skill.find({ user: u._id, type: 'teach' });
-        return { user: u, teachSkills: skills };
-      })
-    );
+    const results = users.map((u) => {
+      const userIdStr = u._id.toString();
+      return { user: u, teachSkills: skillsByUser[userIdStr] || [] };
+    });
 
     res.json({
       users: results,
