@@ -1,89 +1,58 @@
 import Session from '../models/Session.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
-import { v4 as uuidv4 } from 'uuid';
 
-// Helper: save a notification and instantly push it via socket if user is online
-async function createAndEmit(req, payload) {
-  const notif = await Notification.create(payload);
-  const io = req.app.get('io');
-  const onlineUsers = req.app.get('onlineUsers');
-  const targetId = String(payload.user);
-  if (io && onlineUsers && onlineUsers.has(targetId)) {
-    io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
-  }
-  return notif;
-}
-
-// @desc    Book a new session (requesting from a mentor)
+// @desc    Create a new session request
 // @route   POST /api/sessions
 // @access  Private
-export const bookSession = async (req, res) => {
+export const createSession = async (req, res) => {
   try {
     const { mentorId, skillId, scheduledAt, notes } = req.body;
 
-    // Check if user has enough credits
-    const learner = await User.findById(req.user.id);
-    if (learner.skillCredits < 1) {
-      return res.status(400).json({ message: 'Not enough skill credits to book a session.' });
+    // Check if mentor exists
+    const mentor = await User.findById(mentorId);
+    if (!mentor) {
+      return res.status(404).json({ message: 'Mentor not found' });
     }
 
-    // Prevent self-booking
+    // Don't allow self-booking
     if (mentorId === req.user.id) {
-      return res.status(400).json({ message: 'Cannot book a session with yourself.' });
+      return res.status(400).json({ message: 'You cannot book a session with yourself' });
     }
 
-    const session = new Session({
+    const session = await Session.create({
       mentor: mentorId,
       learner: req.user.id,
       skill: skillId,
       scheduledAt,
       notes,
-      meetingLink: uuidv4(), // Generate unique room ID for WebRTC
-      creditsExchanged: 1,
     });
 
-    const createdSession = await session.save();
-
-    // Deduct credit from learner
-    learner.skillCredits -= 1;
-    await learner.save();
-
-    // Notify mentor (real-time)
-    await createAndEmit(req, {
+    // Create notification for mentor
+    await Notification.create({
       user: mentorId,
+      relatedUser: req.user.id,
       type: 'session_request',
       title: 'New Session Request',
-      message: `${learner.name} wants to book a session with you!`,
-      link: '/sessions',
-      relatedUser: req.user.id,
+      message: `${req.user.name} requested a session with you.`,
+      link: `/sessions`,
     });
 
-    const populated = await createdSession.populate([
-      { path: 'mentor', select: 'name avatar' },
-      { path: 'learner', select: 'name avatar' },
-      { path: 'skill', select: 'name category' },
-    ]);
-
-    res.status(201).json(populated);
+    res.status(201).json(session);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get user sessions (both learning and mentoring)
+// @desc    Get user sessions (as mentor or learner)
 // @route   GET /api/sessions
 // @access  Private
-export const getSessions = async (req, res) => {
+export const getMySessions = async (req, res) => {
   try {
-    const { status } = req.query;
-    const query = {
-      $or: [{ learner: req.user.id }, { mentor: req.user.id }],
-    };
-    if (status) query.status = status;
-
-    const sessions = await Session.find(query)
-      .populate('mentor', 'name avatar rating')
+    const sessions = await Session.find({
+      $or: [{ mentor: req.user.id }, { learner: req.user.id }],
+    })
+      .populate('mentor', 'name avatar')
       .populate('learner', 'name avatar')
       .populate('skill', 'name category')
       .sort('-scheduledAt');
@@ -94,90 +63,43 @@ export const getSessions = async (req, res) => {
   }
 };
 
-// @desc    Update session status (accept, cancel, complete)
-// @route   PUT /api/sessions/:id/status
+// @desc    Update session status (accept/cancel/complete)
+// @route   PUT /api/sessions/:id
 // @access  Private
 export const updateSessionStatus = async (req, res) => {
   try {
-    const { status } = req.body;
     const session = await Session.findById(req.params.id);
-
     if (!session) {
       return res.status(404).json({ message: 'Session not found' });
     }
 
-    // Authorization checks
-    const isMentor = session.mentor.toString() === req.user.id;
-    const isLearner = session.learner.toString() === req.user.id;
+    const { status } = req.body;
 
-    if (!isMentor && !isLearner) {
-      return res.status(401).json({ message: 'Not authorized' });
+    // Authorization: Only mentor can accept, either can cancel
+    if (status === 'accepted' && session.mentor.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only mentors can accept sessions' });
     }
 
-    const wasAlreadyCompleted = session.status === 'completed';
     session.status = status;
+    await session.save();
 
-    // Logic for completion: Reward mentor based on exchanged credits
-    if (status === 'completed' && !wasAlreadyCompleted) {
-      const mentor = await User.findById(session.mentor);
-      mentor.skillCredits += session.creditsExchanged;
-      mentor.totalSessionsAsMentor += 1;
-      await mentor.save();
+    // Notify other party
+    const recipient = session.mentor.toString() === req.user.id ? session.learner : session.mentor;
+    let notifType = 'system';
+    if (status === 'accepted') notifType = 'session_accepted';
+    if (status === 'cancelled') notifType = 'session_cancelled';
+    if (status === 'completed') notifType = 'session_completed';
 
-      // Update learner stats too
-      const learner = await User.findById(session.learner);
-      learner.totalSessionsAsLearner += 1;
-      await learner.save();
+    await Notification.create({
+      user: recipient,
+      relatedUser: req.user.id,
+      type: notifType,
+      title: 'Session Update',
+      message: `Your session status was updated to ${status}.`,
+      link: `/sessions`,
+    });
 
-      // Notify the other party depending on who completed it (real-time)
-      const otherUser = isMentor ? session.learner : session.mentor;
-      await createAndEmit(req, {
-        user: otherUser,
-        type: 'session_completed',
-        title: 'Session Completed',
-        message: `Your session has been marked as completed. Don't forget to leave a review!`,
-        link: '/sessions',
-        relatedUser: req.user.id,
-      });
-    }
-
-    // Logic for acceptance (real-time)
-    if (status === 'accepted' && isMentor) {
-      await createAndEmit(req, {
-        user: session.learner,
-        type: 'session_accepted',
-        title: 'Session Accepted!',
-        message: `Your session request has been accepted!`,
-        link: '/sessions',
-        relatedUser: session.mentor,
-      });
-    }
-
-    // Logic for cancellation: Refund learner (real-time)
-    if (status === 'cancelled') {
-      const learner = await User.findById(session.learner);
-      learner.skillCredits += session.creditsExchanged;
-      await learner.save();
-
-      const otherUser = isMentor ? session.learner : session.mentor;
-      await createAndEmit(req, {
-        user: otherUser,
-        type: 'session_cancelled',
-        title: 'Session Cancelled',
-        message: `A session has been cancelled. Credits have been refunded.`,
-        link: '/sessions',
-        relatedUser: req.user.id,
-      });
-    }
-
-    const updatedSession = await session.save();
-    const populated = await updatedSession.populate([
-      { path: 'mentor', select: 'name avatar' },
-      { path: 'learner', select: 'name avatar' },
-      { path: 'skill', select: 'name category' },
-    ]);
-
-    res.json(populated);
+    res.json(session);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

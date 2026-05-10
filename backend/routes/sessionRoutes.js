@@ -1,14 +1,18 @@
 import express from 'express';
-import { bookSession, getSessions, updateSessionStatus } from '../controllers/sessionController.js';
+import {
+  createSession,
+  getMySessions,
+  updateSessionStatus,
+} from '../controllers/sessionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-  .post(protect, bookSession)
-  .get(protect, getSessions);
+  .get(protect, getMySessions)
+  .post(protect, createSession);
 
-router.route('/:id/status')
+router.route('/:id')
   .put(protect, updateSessionStatus);
 
 export default router;

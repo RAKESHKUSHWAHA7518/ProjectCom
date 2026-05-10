@@ -58,7 +58,7 @@ export const useSessionStore = create((set, get) => ({
   updateSessionStatus: async (sessionId, status) => {
     try {
       const { user } = useAuthStore.getState();
-      const response = await fetch(`${API_URL}/sessions/${sessionId}/status`, {
+      const response = await fetch(`${API_URL}/sessions/${sessionId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

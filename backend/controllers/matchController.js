@@ -6,18 +6,23 @@ import User from '../models/User.js';
 // @access  Private
 export const getMatches = async (req, res) => {
   try {
-    const { minRating, location, proficiency, sort } = req.query;
+    const { minRating, location, proficiency } = req.query;
 
-    // 1. Find all skills the current user wants to LEARN
-    const myLearnSkills = await Skill.find({ user: req.user.id, type: 'learn' });
-    const myLearnCategories = myLearnSkills.map(skill => skill.category);
-    const myLearnNames = myLearnSkills.map(skill => skill.name.toLowerCase());
+    // 1. Get current user with communities
+    const currentUser = await User.findById(req.user.id).select('joinedCommunities');
+    
+    // 2. Find current user's skills
+    const mySkills = await Skill.find({ user: req.user.id });
+    const myLearnSkills = mySkills.filter(s => s.type === 'learn');
+    const myTeachSkills = mySkills.filter(s => s.type === 'teach');
 
-    if (myLearnSkills.length === 0) {
-      return res.json([]);
-    }
+    if (myLearnSkills.length === 0) return res.json([]);
 
-    // 2. Build match query
+    const myLearnNames = myLearnSkills.map(s => s.name.toLowerCase());
+    const myTeachNames = myTeachSkills.map(s => s.name.toLowerCase());
+    const myLearnCategories = myLearnSkills.map(s => s.category);
+
+    // 3. Find potential mentors (they teach what I want to learn)
     const matchQuery = {
       user: { $ne: req.user.id },
       type: 'teach',
@@ -27,62 +32,76 @@ export const getMatches = async (req, res) => {
       ]
     };
 
-    if (proficiency) {
-      matchQuery.proficiencyLevel = proficiency;
-    }
+    if (proficiency) matchQuery.proficiencyLevel = proficiency;
 
-    const matches = await Skill.find(matchQuery)
-      .populate('user', 'name rating bio numReviews location avatar totalSessionsAsMentor');
+    const potentialMatches = await Skill.find(matchQuery)
+      .populate('user', 'name rating bio numReviews location avatar totalSessionsAsMentor joinedCommunities lastActiveDate');
 
-    // Grouping by users
-    const mentorMap = new Map();
-
-    matches.forEach(skill => {
-      if (skill.user) {
-        const mentorId = skill.user._id.toString();
-
-        // Apply user-level filters
-        if (minRating && skill.user.rating < parseFloat(minRating)) return;
-        if (location && skill.user.location && 
-            !skill.user.location.toLowerCase().includes(location.toLowerCase())) return;
-
-        if (!mentorMap.has(mentorId)) {
-          mentorMap.set(mentorId, {
-            user: skill.user,
-            matchedSkills: [],
-            matchScore: 0,
-          });
-        }
-        const entry = mentorMap.get(mentorId);
-        entry.matchedSkills.push({
-          _id: skill._id,
-          name: skill.name,
-          category: skill.category,
-          proficiencyLevel: skill.proficiencyLevel,
-        });
-
-        // Calculate match score
-        // Exact name match = 3 points, category match = 1 point
-        const nameMatch = myLearnNames.some(n => 
-          skill.name.toLowerCase().includes(n) || n.includes(skill.name.toLowerCase())
-        );
-        entry.matchScore += nameMatch ? 3 : 1;
-        entry.matchScore += (skill.user.rating || 0) * 0.5;
-        entry.matchScore += Math.min(skill.user.numReviews || 0, 10) * 0.2;
-      }
+    // 4. Get all 'learn' skills of potential mentors for "Swap" bonus
+    const potentialMentorIds = [...new Set(potentialMatches.map(m => m.user?._id).filter(Boolean))];
+    const mentorsLearnSkills = await Skill.find({ 
+      user: { $in: potentialMentorIds }, 
+      type: 'learn' 
     });
 
-    let results = Array.from(mentorMap.values());
+    // 5. Build Result Map
+    const mentorMap = new Map();
 
-    // Sort results
-    if (sort === 'rating') {
-      results.sort((a, b) => (b.user.rating || 0) - (a.user.rating || 0));
-    } else if (sort === 'reviews') {
-      results.sort((a, b) => (b.user.numReviews || 0) - (a.user.numReviews || 0));
-    } else {
-      // Default: sort by match score
-      results.sort((a, b) => b.matchScore - a.matchScore);
-    }
+    potentialMatches.forEach(skill => {
+      if (!skill.user) return;
+      const mentorId = skill.user._id.toString();
+
+      // Basic Filters
+      if (minRating && skill.user.rating < parseFloat(minRating)) return;
+      if (location && skill.user.location && !skill.user.location.toLowerCase().includes(location.toLowerCase())) return;
+
+      if (!mentorMap.has(mentorId)) {
+        // Calculate Match Score
+        let score = 0;
+        
+        // A. Skill Relevance (Direct)
+        const isDirectNameMatch = myLearnNames.some(n => 
+          skill.name.toLowerCase().includes(n) || n.includes(skill.name.toLowerCase())
+        );
+        score += isDirectNameMatch ? 15 : 5;
+
+        // B. Bidirectional "Swap" Bonus (Do they want what I teach?)
+        const theirLearnSkills = mentorsLearnSkills.filter(ls => ls.user.toString() === mentorId);
+        const hasSwapPotential = theirLearnSkills.some(tls => 
+          myTeachNames.some(mtn => tls.name.toLowerCase().includes(mtn) || mtn.includes(tls.name.toLowerCase()))
+        );
+        if (hasSwapPotential) score += 25; // Massive boost for mutual benefit
+
+        // C. Social Proof (Common Communities)
+        const commonCommunitiesCount = (skill.user.joinedCommunities || [])
+          .filter(c => currentUser.joinedCommunities.map(String).includes(String(c))).length;
+        score += commonCommunitiesCount * 4;
+
+        // D. Reliability & Reputation
+        score += (skill.user.rating || 0) * 3;
+        score += Math.min(skill.user.numReviews || 0, 20) * 0.5;
+        score += Math.min(skill.user.totalSessionsAsMentor || 0, 50) * 0.2;
+
+        mentorMap.set(mentorId, {
+          user: skill.user,
+          matchedSkills: [],
+          matchScore: score,
+          isMutualSwap: hasSwapPotential,
+          commonCommunities: commonCommunitiesCount
+        });
+      }
+
+      const entry = mentorMap.get(mentorId);
+      entry.matchedSkills.push({
+        _id: skill._id,
+        name: skill.name,
+        category: skill.category,
+        proficiencyLevel: skill.proficiencyLevel,
+      });
+    });
+
+    const results = Array.from(mentorMap.values())
+      .sort((a, b) => b.matchScore - a.matchScore);
 
     res.json(results);
   } catch (error) {

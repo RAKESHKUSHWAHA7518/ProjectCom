@@ -5,7 +5,9 @@ import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatStore';
 import toast from 'react-hot-toast';
-import { Search, MapPin, Star, Coins } from 'lucide-react';
+import { Search, MapPin, Star, Coins, Zap } from 'lucide-react';
+import Avatar from '../components/Avatar';
+import SessionScheduler from '../components/SessionScheduler';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -21,10 +23,9 @@ export default function Explore() {
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showBooking, setShowBooking] = useState(null);
-  const [bookingDate, setBookingDate] = useState('');
-  const [bookingNotes, setBookingNotes] = useState('');
-  const [bookingSkill, setBookingSkill] = useState('');
+  const [showBooking, setShowBooking] = useState(false);
+  const [selectedMentor, setSelectedMentor] = useState(null);
+  const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
   const [selectedSkill, setSelectedSkill] = useState('');
 
   const fetchExplore = async () => {
@@ -71,35 +72,10 @@ export default function Explore() {
     }
   };
 
-  const handleBookSession = async () => {
-    if (!bookingDate || !bookingSkill) return;
-    try {
-      const response = await fetch(`${API_URL}/sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          mentorId: showBooking.user._id,
-          skillId: bookingSkill,
-          scheduledAt: bookingDate,
-          notes: bookingNotes,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Session booked successfully!');
-        setShowBooking(null);
-        setBookingDate('');
-        setBookingNotes('');
-        setBookingSkill('');
-      } else {
-        toast.error(data.message || 'Failed to book session');
-      }
-    } catch (err) {
-      toast.error('Failed to book session');
-    }
+  const handleOpenBooking = (mentor, skills) => {
+    setSelectedMentor(mentor);
+    setSelectedSkillForBooking(skills[0]); // Default to first skill
+    setShowBooking(true);
   };
 
   return (
@@ -243,13 +219,7 @@ export default function Explore() {
                 className="group p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-xl dark:hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-indigo-500 text-white rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg shrink-0">
-                    {mentor.avatar ? (
-                      <img src={mentor.avatar} alt="" className="w-full h-full rounded-2xl object-cover" />
-                    ) : (
-                      mentor.name?.charAt(0)
-                    )}
-                  </div>
+                  <Avatar src={mentor.avatar} name={mentor.name} size="lg" className="rounded-2xl shadow-lg" />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-gray-900 dark:text-white truncate">{mentor.name}</h3>
                     {mentor.location && (
@@ -287,7 +257,7 @@ export default function Explore() {
 
                 <div className="flex flex-col sm:flex-row gap-2">
                   <button
-                    onClick={() => setShowBooking({ user: mentor, skills: teachSkills })}
+                    onClick={() => handleOpenBooking(mentor, teachSkills)}
                     className="w-full sm:flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:shadow-lg transition-all"
                   >
                     Book Session
@@ -331,71 +301,14 @@ export default function Explore() {
       )}
 
       {/* Booking Modal */}
-      {showBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6 animate-in">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Book a Session</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">with {showBooking.user.name}</p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Skill to Learn</label>
-                <select
-                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                  value={bookingSkill}
-                  onChange={(e) => setBookingSkill(e.target.value)}
-                >
-                  <option value="">Select a skill</option>
-                  {showBooking.skills?.map((s) => (
-                    <option key={s._id} value={s._id}>{s.name} ({s.proficiencyLevel})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Schedule Date & Time</label>
-                <input
-                  type="datetime-local"
-                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                  value={bookingDate}
-                  onChange={(e) => setBookingDate(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Notes (optional)</label>
-                <textarea
-                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                  rows="3"
-                  placeholder="What would you like to learn? Any specific topics?"
-                  value={bookingNotes}
-                  onChange={(e) => setBookingNotes(e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300">
-                <Coins className="w-5 h-5 mr-2 text-amber-500" strokeWidth={2} /> This will cost 1 credit. You have {user?.skillCredits || 0} credits.
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowBooking(null)}
-                className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBookSession}
-                disabled={!bookingSkill || !bookingDate}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50"
-              >
-                Confirm Booking
-              </button>
-            </div>
-          </div>
-        </div>
+      {showBooking && selectedMentor && selectedSkillForBooking && (
+        <SessionScheduler
+          isOpen={showBooking}
+          onClose={() => setShowBooking(false)}
+          mentor={selectedMentor}
+          skill={selectedSkillForBooking}
+          currentUser={user}
+        />
       )}
     </div>
   );

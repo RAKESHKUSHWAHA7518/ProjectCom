@@ -1,78 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useSessionStore } from '../store/sessionStore';
-import { useReviewStore } from '../store/reviewStore';
+import Avatar from '../components/Avatar';
+import { Calendar, Clock, Video, CheckCircle, XCircle, AlertCircle, ChevronRight, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function Sessions() {
   const { user } = useAuthStore();
   const { sessions, fetchSessions, updateSessionStatus, isLoading } = useSessionStore();
-  const { createReview } = useReviewStore();
-  const [filter, setFilter] = useState('');
-  const [reviewModal, setReviewModal] = useState(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
+  const [filter, setFilter] = useState('upcoming'); // 'upcoming', 'past', 'pending'
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSessions(filter || undefined);
-  }, [filter, fetchSessions]);
+    fetchSessions();
+  }, [fetchSessions]);
 
   const handleStatusUpdate = async (sessionId, status) => {
     try {
       await updateSessionStatus(sessionId, status);
-      toast.success(`Session ${status} successfully!`);
+      toast.success(`Session ${status}`);
     } catch (err) {
-      toast.error(err.message || 'Failed to update session');
+      toast.error('Failed to update status');
     }
   };
 
-  const handleSubmitReview = async () => {
-    if (!reviewModal) return;
-    try {
-      await createReview(reviewModal._id, reviewRating, reviewComment);
-      setReviewModal(null);
-      setReviewRating(5);
-      setReviewComment('');
-      toast.success('Review submitted! Thank you.');
-    } catch (err) {
-      toast.error(err.message || 'Failed to submit review');
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    const styles = {
-      pending: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-      accepted: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-      completed: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-      cancelled: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800',
-    };
-    return styles[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300';
-  };
-
-  const getStatusIcon = (status) => {
-    const icons = { pending: '⏳', accepted: '✅', completed: '🎉', cancelled: '❌' };
-    return icons[status] || '📌';
-  };
+  const filteredSessions = sessions.filter(s => {
+    const isPast = new Date(s.scheduledAt) < new Date();
+    if (filter === 'upcoming') return !isPast && (s.status === 'accepted' || s.status === 'pending');
+    if (filter === 'past') return isPast || s.status === 'completed' || s.status === 'cancelled';
+    if (filter === 'pending') return s.status === 'pending';
+    return true;
+  });
 
   return (
-    <div className="py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+    <div className="py-8 max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Sessions</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">Track your learning and mentoring sessions</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Your Sessions</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your learning and mentoring schedule</p>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {['', 'pending', 'accepted', 'completed', 'cancelled'].map((f) => (
+
+        <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          {['upcoming', 'pending', 'past'].map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-all ${
+              className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition ${
                 filter === f
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              {f || 'All'}
+              {f}
             </button>
           ))}
         </div>
@@ -80,112 +60,124 @@ export default function Sessions() {
 
       {isLoading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
-      ) : sessions.length === 0 ? (
-        <div className="py-20 text-center">
-          <div className="text-6xl mb-4">📅</div>
-          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">No sessions yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Book a session from the Explore page to get started!</p>
+      ) : filteredSessions.length === 0 ? (
+        <div className="py-20 text-center bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
+          <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Calendar className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">No {filter} sessions</h3>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">
+            {filter === 'upcoming' ? "You don't have any sessions scheduled yet." : "No session history found."}
+          </p>
+          <button
+            onClick={() => navigate('/explore')}
+            className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-600/20"
+          >
+            Find a Mentor
+          </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {sessions.map((session) => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredSessions.map((session) => {
             const isMentor = session.mentor?._id === user._id;
-            const otherPerson = isMentor ? session.learner : session.mentor;
-            const role = isMentor ? 'Mentoring' : 'Learning';
+            const other = isMentor ? session.learner : session.mentor;
+            const sessionDate = new Date(session.scheduledAt);
 
             return (
-              <div key={session._id} className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 ${isMentor ? 'bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/40 dark:to-blue-900/40 text-indigo-600 dark:text-indigo-400' : 'bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/40 dark:to-teal-900/40 text-emerald-600 dark:text-emerald-400'}`}>
-                      {otherPerson?.name?.charAt(0) || '?'}
-                    </div>
+              <div key={session._id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar src={other?.avatar} name={other?.name} size="lg" className="rounded-2xl" />
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-gray-900 dark:text-white">{otherPerson?.name || 'Unknown'}</h3>
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-md border ${getStatusBadge(session.status)}`}>
-                          {getStatusIcon(session.status)} {session.status}
-                        </span>
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${isMentor ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'}`}>
-                          {role}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {session.skill?.name} • {session.skill?.category}
-                      </p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-                        📅 {new Date(session.scheduledAt).toLocaleString()}
-                      </p>
-                      {session.notes && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 italic">"{session.notes}"</p>}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-1 inline-block ${
+                        isMentor ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                      }`}>
+                        {isMentor ? 'Mentoring' : 'Learning'}
+                      </span>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{other?.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{session.skill?.name}</p>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 shrink-0">
-                    {isMentor && session.status === 'pending' && (
-                      <button onClick={() => handleStatusUpdate(session._id, 'accepted')} className="px-4 py-2 text-sm font-medium text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition">Accept</button>
-                    )}
-                    {isMentor && session.status === 'accepted' && (
-                      <button onClick={() => handleStatusUpdate(session._id, 'completed')} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">Mark Complete</button>
-                    )}
-                    {session.status === 'accepted' && session.meetingLink && (
-                      <a href={`/video/${session.meetingLink}`} className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-purple-500 rounded-xl hover:shadow-lg transition">🎥 Join Call</a>
-                    )}
-                    {session.status === 'completed' && (
-                      <button onClick={() => setReviewModal(session)} className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 rounded-xl hover:bg-amber-200 dark:hover:bg-amber-900/60 transition">⭐ Leave Review</button>
-                    )}
-                    {(session.status === 'pending' || session.status === 'accepted') && (
-                      <button onClick={() => handleStatusUpdate(session._id, 'cancelled')} className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">Cancel</button>
-                    )}
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                    session.status === 'accepted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' :
+                    session.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' :
+                    session.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30'
+                  }`}>
+                    {session.status}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+                    <Calendar className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Date</p>
+                      <p className="text-sm font-semibold dark:text-white">{sessionDate.toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl">
+                    <Clock className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Time</p>
+                      <p className="text-sm font-semibold dark:text-white">{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {session.notes && (
+                  <div className="mb-6 p-4 bg-primary-50/50 dark:bg-primary-950/10 rounded-2xl border border-primary-100/50 dark:border-primary-900/20">
+                    <p className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase mb-1">Session Goals</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{session.notes}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  {session.status === 'pending' && isMentor ? (
+                    <>
+                      <button
+                        onClick={() => handleStatusUpdate(session._id, 'accepted')}
+                        className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="w-4 h-4" /> Accept
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(session._id, 'cancelled')}
+                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-red-600 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                      >
+                        <XCircle className="w-4 h-4" /> Decline
+                      </button>
+                    </>
+                  ) : session.status === 'accepted' ? (
+                    <>
+                      <button
+                        onClick={() => navigate(`/video/${session._id}`)}
+                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition flex items-center justify-center gap-2"
+                      >
+                        <Video className="w-4 h-4" /> Join Room
+                      </button>
+                      <button
+                        onClick={() => handleStatusUpdate(session._id, 'completed')}
+                        className="p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-200 transition"
+                        title="Mark as Complete"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => navigate('/chat')}
+                      className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" /> Send Message
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Review Modal */}
-      {reviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Leave a Review</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              How was your session with {reviewModal.mentor?._id === user._id ? reviewModal.learner?.name : reviewModal.mentor?.name}?
-            </p>
-
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Rating</label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setReviewRating(star)}
-                    className={`text-3xl transition-transform hover:scale-110 ${star <= reviewRating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`}
-                  >
-                    ★
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Comment (optional)</label>
-              <textarea
-                className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                rows="3"
-                placeholder="Share your experience..."
-                value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => { setReviewModal(null); setReviewRating(5); setReviewComment(''); }} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancel</button>
-              <button onClick={handleSubmitReview} className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition">Submit Review</button>
-            </div>
-          </div>
         </div>
       )}
     </div>
