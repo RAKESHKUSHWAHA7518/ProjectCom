@@ -30,6 +30,10 @@ const postSchema = mongoose.Schema(
         },
       },
     ],
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
@@ -58,6 +62,11 @@ const communitySchema = mongoose.Schema(
         ref: 'User',
       },
     ],
+    creator: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User',
+    },
     posts: [postSchema],
   },
   {

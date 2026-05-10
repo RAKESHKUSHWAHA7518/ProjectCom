@@ -4,6 +4,18 @@ import User from '../models/User.js';
 import Badge from '../models/Badge.js';
 import Notification from '../models/Notification.js';
 
+// Helper: save a notification and instantly push it via socket if user is online
+async function createAndEmit(req, payload) {
+  const notif = await Notification.create(payload);
+  const io = req.app.get('io');
+  const onlineUsers = req.app.get('onlineUsers');
+  const targetId = String(payload.user);
+  if (io && onlineUsers && onlineUsers.has(targetId)) {
+    io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
+  }
+  return notif;
+}
+
 // @desc    Create a review after session completion
 // @route   POST /api/reviews
 // @access  Private
@@ -56,8 +68,8 @@ export const createReview = async (req, res) => {
     // Check for badge awards
     await checkAndAwardBadges(reviewedUser);
 
-    // Create notification
-    await Notification.create({
+    // Create notification (real-time)
+    await createAndEmit(req, {
       user: reviewee,
       type: 'new_review',
       title: 'New Review Received',
@@ -130,6 +142,8 @@ async function checkAndAwardBadges(user) {
           message: `You earned the "${badge.label}" badge! ${badge.icon}`,
           link: '/profile',
         });
+        // Note: badge notifications use Notification.create directly (no req context here)
+        // They will be picked up on next poll; for live push pass io/onlineUsers if needed
       }
     } catch (e) {
       // Ignore duplicate badge errors

@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import http from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
 
 dotenv.config();
@@ -12,6 +14,10 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Database Connection
 connectDB();
@@ -27,6 +33,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);
@@ -38,6 +45,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/search', searchRoutes);
 
 app.get('/', (req, res) => {
   res.send('SkillSwap API is running...');

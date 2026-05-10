@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useCommunityStore } from '../store/communityStore';
 import toast from 'react-hot-toast';
+import Avatar from '../components/Avatar';
 
 export default function Community() {
   const { id } = useParams();
@@ -19,6 +20,12 @@ export default function Community() {
     replyToPost,
     toggleLike,
     createCommunity,
+    editPost,
+    deletePost,
+    editReply,
+    deleteReply,
+    pinPost,
+    unpinPost,
     isLoading,
   } = useCommunityStore();
 
@@ -27,6 +34,13 @@ export default function Community() {
   const [showReplyFor, setShowReplyFor] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCommunity, setNewCommunity] = useState({ name: '', description: '', category: '', icon: '💬' });
+
+  // Edit state for posts
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editingPostContent, setEditingPostContent] = useState('');
+  // Edit state for replies
+  const [editingReply, setEditingReply] = useState(null); // { postId, replyId }
+  const [editingReplyContent, setEditingReplyContent] = useState('');
 
   useEffect(() => {
     fetchCommunities();
@@ -67,7 +81,75 @@ export default function Community() {
     }
   };
 
-  // Community List View
+  // Post edit/delete
+  const handleStartEditPost = (post) => {
+    setEditingPostId(post._id);
+    setEditingPostContent(post.content);
+  };
+  const handleSaveEditPost = async (postId) => {
+    if (!editingPostContent.trim()) return;
+    try {
+      await editPost(id, postId, editingPostContent.trim());
+      setEditingPostId(null);
+      toast.success('Post updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update post');
+    }
+  };
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Delete this post?')) return;
+    try {
+      await deletePost(id, postId);
+      toast.success('Post deleted');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete post');
+    }
+  };
+
+  // Reply edit/delete
+  const handleStartEditReply = (postId, reply) => {
+    setEditingReply({ postId, replyId: reply._id });
+    setEditingReplyContent(reply.content);
+  };
+  const handleSaveEditReply = async () => {
+    if (!editingReplyContent.trim() || !editingReply) return;
+    try {
+      await editReply(id, editingReply.postId, editingReply.replyId, editingReplyContent.trim());
+      setEditingReply(null);
+      toast.success('Reply updated');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update reply');
+    }
+  };
+  const handleDeleteReply = async (postId, replyId) => {
+    if (!window.confirm('Delete this reply?')) return;
+    try {
+      await deleteReply(id, postId, replyId);
+      toast.success('Reply deleted');
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete reply');
+    }
+  };
+
+  const handlePin = async (postId) => {
+    try {
+      await pinPost(id, postId);
+      toast.success('Post pinned');
+    } catch (err) {
+      toast.error(err.message || 'Failed to pin post');
+    }
+  };
+
+  const handleUnpin = async (postId) => {
+    try {
+      await unpinPost(id, postId);
+      toast.success('Post unpinned');
+    } catch (err) {
+      toast.error(err.message || 'Failed to unpin post');
+    }
+  };
+
+  /* ─── Community List View ─── */
   if (!id) {
     return (
       <div className="py-8">
@@ -116,10 +198,7 @@ export default function Community() {
                     <span className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg font-medium">Joined</span>
                   ) : (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        joinCommunity(community._id);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); joinCommunity(community._id); }}
                       className="text-xs px-3 py-1.5 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 rounded-lg font-medium hover:bg-primary-100 dark:hover:bg-primary-900/40 transition"
                     >
                       Join
@@ -193,7 +272,7 @@ export default function Community() {
     );
   }
 
-  // Single Community View (with posts)
+  /* ─── Single Community View ─── */
   if (!activeCommunity) {
     return (
       <div className="flex justify-center py-20">
@@ -203,14 +282,22 @@ export default function Community() {
   }
 
   const isMember = activeCommunity.members?.some((m) => (m._id || m) === user._id);
+  const isCreator = user._id === (activeCommunity.creator?._id || activeCommunity.creator);
+
+  const sortedPosts = activeCommunity.posts ? [...activeCommunity.posts].sort((a, b) => {
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  }) : [];
 
   return (
     <div className="py-8 max-w-3xl mx-auto">
-      {/* Header */}
+      {/* Back */}
       <button onClick={() => navigate('/community')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4 inline-block">
         ← Back to Communities
       </button>
 
+      {/* Community header */}
       <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm mb-6">
         <div className="flex items-center gap-4 mb-3">
           <span className="text-4xl">{activeCommunity.icon}</span>
@@ -219,19 +306,9 @@ export default function Community() {
             <p className="text-sm text-gray-500 dark:text-gray-400">{activeCommunity.description}</p>
           </div>
           {isMember ? (
-            <button
-              onClick={() => leaveCommunity(activeCommunity._id)}
-              className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition"
-            >
-              Leave
-            </button>
+            <button onClick={() => leaveCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">Leave</button>
           ) : (
-            <button
-              onClick={() => joinCommunity(activeCommunity._id)}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition"
-            >
-              Join Community
-            </button>
+            <button onClick={() => joinCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">Join Community</button>
           )}
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -252,11 +329,7 @@ export default function Community() {
             onChange={(e) => setNewPostContent(e.target.value)}
           />
           <div className="flex justify-end mt-2">
-            <button
-              type="submit"
-              disabled={!newPostContent.trim()}
-              className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50"
-            >
+            <button type="submit" disabled={!newPostContent.trim()} className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50">
               Post
             </button>
           </div>
@@ -271,71 +344,143 @@ export default function Community() {
             <p>No posts yet. Be the first to share!</p>
           </div>
         ) : (
-          [...activeCommunity.posts].reverse().map((post) => (
-            <div key={post._id} className="p-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-indigo-500 text-white rounded-full flex items-center justify-center font-bold">
-                  {post.author?.name?.charAt(0) || '?'}
+          sortedPosts.map((post) => {
+            const isPostAuthor = post.author?._id === user._id || post.author === user._id;
+            return (
+              <div key={post._id} className={`p-5 bg-white dark:bg-gray-900 border rounded-2xl shadow-sm transition-all ${post.isPinned ? 'border-primary-400 dark:border-primary-600 ring-1 ring-primary-100 dark:ring-primary-900/30' : 'border-gray-100 dark:border-gray-800'}`}>
+                {post.isPinned && (
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-3">
+                    <span className="p-1 bg-primary-100 dark:bg-primary-900/30 rounded">📌 PINNED</span>
+                  </div>
+                )}
+
+                {/* Post Header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <Avatar src={post.author?.avatar} name={post.author?.name} size="md" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-gray-900 dark:text-white">{post.author?.name || 'Unknown'}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
+                  </div>
+                  {/* Author edit/delete controls */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {isCreator && (
+                      <button
+                        onClick={() => post.isPinned ? handleUnpin(post._id) : handlePin(post._id)}
+                        className={`p-1.5 rounded-lg transition-all ${post.isPinned ? 'text-primary-600 bg-primary-50 dark:bg-primary-950/30' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                        title={post.isPinned ? 'Unpin' : 'Pin'}
+                      >
+                        {post.isPinned ? '📌' : '📍'}
+                      </button>
+                    )}
+                    {isPostAuthor && (
+                      <>
+                        <button
+                          onClick={() => handleStartEditPost(post)}
+                          className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-lg transition"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeletePost(post._id)}
+                          className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-sm text-gray-900 dark:text-white">{post.author?.name || 'Unknown'}</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
 
-              <p className="text-gray-800 dark:text-gray-200 mb-4 whitespace-pre-wrap">{post.content}</p>
-
-              <div className="flex items-center gap-4 text-sm">
-                <button
-                  onClick={() => handleLike(post._id)}
-                  className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
-                >
-                  {post.likes?.includes(user._id) ? '❤️' : '🤍'} {post.likes?.length || 0}
-                </button>
-                <button
-                  onClick={() => setShowReplyFor(showReplyFor === post._id ? null : post._id)}
-                  className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition"
-                >
-                  💬 {post.replies?.length || 0}
-                </button>
-              </div>
-
-              {/* Replies */}
-              {post.replies && post.replies.length > 0 && (
-                <div className="mt-4 space-y-2 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
-                  {post.replies.map((reply, idx) => (
-                    <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{reply.author?.name || 'Unknown'}</span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(reply.createdAt).toLocaleString()}</span>
-                      </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">{reply.content}</p>
+                {/* Post Content */}
+                {editingPostId === post._id ? (
+                  <div className="mb-4">
+                    <textarea
+                      className="w-full px-3 py-2 text-sm border border-primary-300 dark:border-primary-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      rows="3"
+                      value={editingPostContent}
+                      onChange={(e) => setEditingPostContent(e.target.value)}
+                      autoFocus
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button onClick={() => handleSaveEditPost(post._id)} className="px-4 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">Save</button>
+                      <button onClick={() => setEditingPostId(null)} className="px-4 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancel</button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <p className="text-gray-800 dark:text-gray-200 mb-4 whitespace-pre-wrap">{post.content}</p>
+                )}
 
-              {/* Reply Input */}
-              {showReplyFor === post._id && isMember && (
-                <div className="mt-3 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Write a reply..."
-                    className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                    value={replyContent[post._id] || ''}
-                    onChange={(e) => setReplyContent({ ...replyContent, [post._id]: e.target.value })}
-                    onKeyDown={(e) => e.key === 'Enter' && handleReply(post._id)}
-                  />
-                  <button
-                    onClick={() => handleReply(post._id)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition"
-                  >
-                    Reply
+                {/* Like & Reply buttons */}
+                <div className="flex items-center gap-4 text-sm">
+                  <button onClick={() => handleLike(post._id)} className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition">
+                    {post.likes?.includes(user._id) ? '❤️' : '🤍'} {post.likes?.length || 0}
+                  </button>
+                  <button onClick={() => setShowReplyFor(showReplyFor === post._id ? null : post._id)} className="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">
+                    💬 {post.replies?.length || 0}
                   </button>
                 </div>
-              )}
-            </div>
-          ))
+
+                {/* Replies */}
+                {post.replies && post.replies.length > 0 && (
+                  <div className="mt-4 space-y-2 pl-4 border-l-2 border-gray-100 dark:border-gray-800">
+                    {post.replies.map((reply) => {
+                      const isReplyAuthor = reply.author?._id === user._id || reply.author === user._id;
+                      const isEditingThisReply = editingReply?.postId === post._id && editingReply?.replyId === reply._id;
+                      return (
+                        <div key={reply._id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Avatar src={reply.author?.avatar} name={reply.author?.name} size="xs" />
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{reply.author?.name || 'Unknown'}</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(reply.createdAt).toLocaleString()}</span>
+                            {isReplyAuthor && (
+                              <div className="ml-auto flex gap-1">
+                                <button onClick={() => handleStartEditReply(post._id, reply)} className="text-[10px] px-1.5 py-0.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-950/20 rounded transition">✏️</button>
+                                <button onClick={() => handleDeleteReply(post._id, reply._id)} className="text-[10px] px-1.5 py-0.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition">🗑️</button>
+                              </div>
+                            )}
+                          </div>
+                          {isEditingThisReply ? (
+                            <div>
+                              <input
+                                type="text"
+                                className="w-full px-2 py-1.5 text-sm border border-primary-300 dark:border-primary-700 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-primary-400"
+                                value={editingReplyContent}
+                                onChange={(e) => setEditingReplyContent(e.target.value)}
+                                autoFocus
+                              />
+                              <div className="flex gap-2 mt-1.5">
+                                <button onClick={handleSaveEditReply} className="px-3 py-1 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">Save</button>
+                                <button onClick={() => setEditingReply(null)} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{reply.content}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Reply Input */}
+                {showReplyFor === post._id && isMember && (
+                  <div className="mt-3 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Write a reply..."
+                      className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                      value={replyContent[post._id] || ''}
+                      onChange={(e) => setReplyContent({ ...replyContent, [post._id]: e.target.value })}
+                      onKeyDown={(e) => e.key === 'Enter' && handleReply(post._id)}
+                    />
+                    <button onClick={() => handleReply(post._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">
+                      Reply
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
     </div>

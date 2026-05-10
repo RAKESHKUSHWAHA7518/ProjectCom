@@ -3,6 +3,18 @@ import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import { v4 as uuidv4 } from 'uuid';
 
+// Helper: save a notification and instantly push it via socket if user is online
+async function createAndEmit(req, payload) {
+  const notif = await Notification.create(payload);
+  const io = req.app.get('io');
+  const onlineUsers = req.app.get('onlineUsers');
+  const targetId = String(payload.user);
+  if (io && onlineUsers && onlineUsers.has(targetId)) {
+    io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
+  }
+  return notif;
+}
+
 // @desc    Book a new session (requesting from a mentor)
 // @route   POST /api/sessions
 // @access  Private
@@ -37,8 +49,8 @@ export const bookSession = async (req, res) => {
     learner.skillCredits -= 1;
     await learner.save();
 
-    // Notify mentor
-    await Notification.create({
+    // Notify mentor (real-time)
+    await createAndEmit(req, {
       user: mentorId,
       type: 'session_request',
       title: 'New Session Request',
@@ -117,9 +129,9 @@ export const updateSessionStatus = async (req, res) => {
       learner.totalSessionsAsLearner += 1;
       await learner.save();
 
-      // Notify the other party depending on who completed it
+      // Notify the other party depending on who completed it (real-time)
       const otherUser = isMentor ? session.learner : session.mentor;
-      await Notification.create({
+      await createAndEmit(req, {
         user: otherUser,
         type: 'session_completed',
         title: 'Session Completed',
@@ -129,9 +141,9 @@ export const updateSessionStatus = async (req, res) => {
       });
     }
 
-    // Logic for acceptance
+    // Logic for acceptance (real-time)
     if (status === 'accepted' && isMentor) {
-      await Notification.create({
+      await createAndEmit(req, {
         user: session.learner,
         type: 'session_accepted',
         title: 'Session Accepted!',
@@ -141,14 +153,14 @@ export const updateSessionStatus = async (req, res) => {
       });
     }
 
-    // Logic for cancellation: Refund learner
+    // Logic for cancellation: Refund learner (real-time)
     if (status === 'cancelled') {
       const learner = await User.findById(session.learner);
       learner.skillCredits += session.creditsExchanged;
       await learner.save();
 
       const otherUser = isMentor ? session.learner : session.mentor;
-      await Notification.create({
+      await createAndEmit(req, {
         user: otherUser,
         type: 'session_cancelled',
         title: 'Session Cancelled',

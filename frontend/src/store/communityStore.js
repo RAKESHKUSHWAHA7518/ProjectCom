@@ -161,4 +161,173 @@ export const useCommunityStore = create((set) => ({
       throw error;
     }
   },
+
+  editPost: async (communityId, postId, content) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/communities/${communityId}/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ content }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.map((p) => (p._id === postId ? data : p)),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  deletePost: async (communityId, postId) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/communities/${communityId}/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.filter((p) => p._id !== postId),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  editReply: async (communityId, postId, replyId, content) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(
+        `${API_URL}/communities/${communityId}/posts/${postId}/replies/${replyId}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({ content }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.map((p) => (p._id === postId ? data : p)),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  deleteReply: async (communityId, postId, replyId) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(
+        `${API_URL}/communities/${communityId}/posts/${postId}/replies/${replyId}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.map((p) =>
+                p._id === postId
+                  ? { ...p, replies: p.replies.filter((r) => r._id !== replyId) }
+                  : p
+              ),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  pinPost: async (communityId, postId) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/communities/${communityId}/posts/${postId}/pin`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.map((p) =>
+                p._id === postId ? { ...p, isPinned: true } : p
+              ),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  unpinPost: async (communityId, postId) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/communities/${communityId}/posts/${postId}/unpin`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+      set((state) => ({
+        activeCommunity: state.activeCommunity
+          ? {
+              ...state.activeCommunity,
+              posts: state.activeCommunity.posts.map((p) =>
+                p._id === postId ? { ...p, isPinned: false } : p
+              ),
+            }
+          : null,
+      }));
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
 }));
+

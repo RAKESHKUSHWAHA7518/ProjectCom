@@ -195,12 +195,169 @@ export const createCommunity = async (req, res) => {
       category,
       icon,
       members: [req.user.id],
+      creator: req.user.id,
     });
     res.status(201).json(community);
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Community with this name already exists' });
     }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Edit a post
+// @route   PUT /api/communities/:id/posts/:postId
+// @access  Private (author only)
+export const editPost = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised to edit this post' });
+    }
+
+    post.content = req.body.content || post.content;
+    await community.save();
+
+    const updated = await Community.findById(req.params.id)
+      .populate('posts.author', 'name avatar')
+      .populate('posts.replies.author', 'name avatar');
+
+    res.json(updated.posts.id(req.params.postId));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a post
+// @route   DELETE /api/communities/:id/posts/:postId
+// @access  Private (author only)
+export const deletePost = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    if (post.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised to delete this post' });
+    }
+
+    community.posts.pull(req.params.postId);
+    await community.save();
+
+    res.json({ message: 'Post deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Edit a reply
+// @route   PUT /api/communities/:id/posts/:postId/replies/:replyId
+// @access  Private (author only)
+export const editReply = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const reply = post.replies.id(req.params.replyId);
+    if (!reply) return res.status(404).json({ message: 'Reply not found' });
+
+    if (reply.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised to edit this reply' });
+    }
+
+    reply.content = req.body.content || reply.content;
+    await community.save();
+
+    const updated = await Community.findById(req.params.id)
+      .populate('posts.author', 'name avatar')
+      .populate('posts.replies.author', 'name avatar');
+
+    res.json(updated.posts.id(req.params.postId));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete a reply
+// @route   DELETE /api/communities/:id/posts/:postId/replies/:replyId
+// @access  Private (author only)
+export const deleteReply = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const reply = post.replies.id(req.params.replyId);
+    if (!reply) return res.status(404).json({ message: 'Reply not found' });
+
+    if (reply.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised to delete this reply' });
+    }
+
+    post.replies.pull(req.params.replyId);
+    await community.save();
+
+    res.json({ message: 'Reply deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Pin a post
+// @route   POST /api/communities/:id/posts/:postId/pin
+// @access  Private (creator only)
+export const pinPost = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    if (community.creator.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only community creator can pin posts' });
+    }
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    post.isPinned = true;
+    await community.save();
+    res.json({ message: 'Post pinned' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Unpin a post
+// @route   POST /api/communities/:id/posts/:postId/unpin
+// @access  Private (creator only)
+export const unpinPost = async (req, res) => {
+  try {
+    const community = await Community.findById(req.params.id);
+    if (!community) return res.status(404).json({ message: 'Community not found' });
+
+    if (community.creator.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only community creator can unpin posts' });
+    }
+
+    const post = community.posts.id(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    post.isPinned = false;
+    await community.save();
+    res.json({ message: 'Post unpinned' });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

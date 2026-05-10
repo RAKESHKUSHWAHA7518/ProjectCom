@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
 import { useChatStore } from '../store/chatStore';
-import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket } from 'lucide-react';
+import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload } from 'lucide-react';
+import Avatar from '../components/Avatar';
 
 const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
 
@@ -78,6 +79,34 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch(`${API_URL}/users/avatar`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setProfile({ ...profile, avatar: data.avatar });
+        // Also update the auth store if needed
+        toast.success('Avatar updated!');
+      } else {
+        toast.error(data.message || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error('Failed to upload image');
+    }
+  };
+
   const handleStartChat = async () => {
     try {
       if (!profile || !profile._id) return;
@@ -137,11 +166,13 @@ export default function Profile() {
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500" />
 
         <div className="relative flex flex-col md:flex-row items-start gap-6 pt-16">
-          <div className="w-24 h-24 bg-white dark:bg-gray-900 rounded-2xl border-4 border-white dark:border-gray-900 shadow-xl flex items-center justify-center text-3xl font-bold text-primary-600 dark:text-primary-400 shrink-0 overflow-hidden">
-            {profile.avatar ? (
-              <img src={profile.avatar} alt="" className="w-full h-full object-cover" />
-            ) : (
-              profile.name?.charAt(0)
+          <div className="relative group/avatar">
+            <Avatar src={profile.avatar} name={profile.name} size="xl" className="border-4 border-white dark:border-gray-900 shadow-xl" />
+            {isOwnProfile && (
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl opacity-0 group-hover/avatar:opacity-100 transition-opacity cursor-pointer">
+                <Camera className="w-6 h-6" />
+                <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
+              </label>
             )}
           </div>
 

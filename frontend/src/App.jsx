@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -21,6 +22,8 @@ import Chat from './pages/Chat'
 import VideoCall from './pages/VideoCall'
 import Leaderboard from './pages/Leaderboard'
 import Community from './pages/Community'
+import SearchModal from './components/SearchModal'
+import Avatar from './components/Avatar'
 import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -328,7 +331,7 @@ function ThemeToggle() {
 /* ============================================================
    NAVBAR
    ============================================================ */
-function Navbar() {
+function Navbar({ onSearchClick }) {
   const { user, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
@@ -382,16 +385,28 @@ function Navbar() {
                   )
                 })}
 
+                <button
+                  onClick={onSearchClick}
+                  className="flex items-center gap-2 px-3 py-1.5 ml-1 text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-750 transition-all group"
+                  aria-label="Search"
+                >
+                  <Search className="w-4 h-4 group-hover:text-primary-500 transition-colors" />
+                  <span className="hidden lg:inline">Search...</span>
+                  <kbd className="hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-400">
+                    <span className="text-[8px]">Ctrl</span> K
+                  </kbd>
+                </button>
+
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
                 <ThemeToggle />
                 <NotificationBell />
 
-                <Link
+                 <Link
                   to="/profile"
-                  className="ml-1 w-9 h-9 bg-gradient-to-br from-primary-500 to-accent-500 text-white rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-white dark:ring-gray-900 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 transition-all duration-200"
+                  className="ml-1 transition-all duration-200"
                 >
-                  {user.name?.charAt(0).toUpperCase()}
+                  <Avatar src={user.avatar} name={user.name} size="sm" className="ring-2 ring-white dark:ring-gray-900 shadow-lg shadow-primary-500/20" />
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -422,6 +437,13 @@ function Navbar() {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-1">
+            <button
+              onClick={onSearchClick}
+              className="p-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -534,6 +556,18 @@ function SocketManager() {
 
       socket.on('new-notification', (data) => {
         addNotification(data)
+        // Show instant toast popup
+        toast(data.title || 'New notification', {
+          icon: '🔔',
+          duration: 4000,
+          style: {
+            background: 'var(--toast-bg, #1e293b)',
+            color: 'var(--toast-color, #f8fafc)',
+            borderRadius: '12px',
+            fontSize: '14px',
+            border: '1px solid rgba(99,102,241,0.3)',
+          },
+        })
       })
 
       return () => {
@@ -553,9 +587,21 @@ function SocketManager() {
 function App() {
   const { user } = useAuthStore()
   const { initTheme } = useThemeStore()
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   useEffect(() => {
     initTheme()
+  }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setIsSearchOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   return (
@@ -563,7 +609,8 @@ function App() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
         <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
         <SocketManager />
-        <Navbar />
+        <Navbar onSearchClick={() => setIsSearchOpen(true)} />
+        <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Routes>
             <Route path="/" element={<Home />} />
