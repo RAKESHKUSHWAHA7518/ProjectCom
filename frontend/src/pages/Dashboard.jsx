@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
+import OnboardingTour from '../components/OnboardingTour';
 
 export default function Dashboard() {
   const { user, refreshUser } = useAuthStore();
@@ -159,7 +160,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Skills Management */}
-        <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
+        <div id="tour-skills" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
           <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Your Skills Portfolio</h2>
 
           <form onSubmit={(e) => {
@@ -276,7 +277,7 @@ export default function Dashboard() {
         {/* Right Column */}
         <div className="space-y-8">
           {/* Recent Sessions */}
-          <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
+          <div id="tour-sessions" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Sessions</h2>
               <Link to="/sessions" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">View All →</Link>
@@ -326,7 +327,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recommended Mentors */}
-          <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
+          <div id="tour-mentors" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recommended Mentors</h2>
               <Link to="/explore" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">Explore More →</Link>
@@ -383,7 +384,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+      <div id="tour-quick-links" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         {[
           { to: '/explore', icon: Search, label: 'Find Mentors', color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30' },
           { to: '/chat', icon: MessageCircle, label: 'Messages', color: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' },
@@ -407,6 +408,8 @@ export default function Dashboard() {
           currentUser={user}
         />
       )}
+
+      <OnboardingTour />
     </div>
   );
 }
