@@ -5,7 +5,7 @@ import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import toast from 'react-hot-toast';
-import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart } from 'lucide-react';
+import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2 } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 
@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [showBooking, setShowBooking] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
+  const [personalStats, setPersonalStats] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -28,6 +29,21 @@ export default function Dashboard() {
     fetchMatches();
     fetchSessions();
   }, [fetchMySkills, fetchMatches, fetchSessions, refreshUser]);
+
+  useEffect(() => {
+    const fetchPersonalStats = async () => {
+      try {
+        const response = await fetch(`${API_URL}/stats/me`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        const data = await response.json();
+        if (response.ok) setPersonalStats(data);
+      } catch (error) {
+        console.error('Failed to fetch personal stats:', error);
+      }
+    };
+    if (user?.token) fetchPersonalStats();
+  }, [user]);
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -78,6 +94,68 @@ export default function Dashboard() {
           <div className="text-sm text-purple-100 mt-1">Completed</div>
         </div>
       </div>
+
+      {/* Personal Analytics Dashboard */}
+      {personalStats && (
+        <div className="mb-8 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
+          <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-primary-500" /> Personal Analytics
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Sessions Over Time */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Sessions (Last 6 Months)</h3>
+              <div className="flex items-end gap-2 h-32 mt-4">
+                {personalStats.sessionsOverTime?.length > 0 ? (
+                  personalStats.sessionsOverTime.map((item, idx) => {
+                    const maxCount = Math.max(...personalStats.sessionsOverTime.map(i => i.count), 1);
+                    const height = `${(item.count / maxCount) * 100}%`;
+                    const monthName = new Date(item._id.year, item._id.month - 1).toLocaleString('default', { month: 'short' });
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col justify-end items-center group relative h-full">
+                        <div className="absolute -top-8 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                          {item.count} sessions
+                        </div>
+                        <div className="w-full max-w-[40px] bg-primary-500 hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500 rounded-t-sm transition-all" style={{ height }} />
+                        <span className="text-[10px] text-gray-500 mt-2">{monthName}</span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">No session data yet</div>
+                )}
+              </div>
+            </div>
+
+            {/* Skill Popularity */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Skill Demand (Requests Received)</h3>
+              <div className="space-y-4">
+                {personalStats.skillPopularity?.length > 0 ? (
+                  personalStats.skillPopularity.slice(0, 4).map((skill, idx) => {
+                    const maxCount = Math.max(...personalStats.skillPopularity.map(s => s.count), 1);
+                    const width = `${(skill.count / maxCount) * 100}%`;
+                    return (
+                      <div key={idx}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{skill.name}</span>
+                          <span className="text-gray-500">{skill.count} requests</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div className="bg-emerald-500 h-2 rounded-full transition-all duration-500" style={{ width }} />
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="w-full h-24 flex items-center justify-center text-sm text-gray-400">No requests yet</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Skills Management */}

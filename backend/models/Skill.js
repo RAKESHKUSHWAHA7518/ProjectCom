@@ -25,6 +25,12 @@ const skillSchema = mongoose.Schema(
       enum: ['beginner', 'intermediate', 'advanced', 'expert'],
       default: 'beginner',
     },
+    endorsements: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      }
+    ],
   },
   {
     timestamps: true,

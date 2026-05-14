@@ -70,3 +70,39 @@ export const deleteSkill = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Endorse or un-endorse a skill
+// @route   POST /api/skills/:id/endorse
+// @access  Private
+export const endorseSkill = async (req, res) => {
+  try {
+    const skill = await Skill.findById(req.params.id);
+
+    if (!skill) {
+      return res.status(404).json({ message: 'Skill not found' });
+    }
+
+    // A user cannot endorse their own skill
+    if (skill.user.toString() === req.user.id) {
+      return res.status(400).json({ message: 'You cannot endorse your own skill' });
+    }
+
+    const hasEndorsed = skill.endorsements.includes(req.user.id);
+
+    if (hasEndorsed) {
+      // Un-endorse
+      skill.endorsements = skill.endorsements.filter(
+        (userId) => userId.toString() !== req.user.id
+      );
+    } else {
+      // Endorse
+      skill.endorsements.push(req.user.id);
+    }
+
+    await skill.save();
+
+    res.json(skill.endorsements);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

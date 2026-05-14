@@ -157,6 +157,24 @@ export default function Profile() {
     return <div className="py-20 text-center text-gray-500 dark:text-gray-400">User not found</div>;
   }
 
+  const handleEndorse = async (skillId) => {
+    try {
+      const res = await fetch(`${API_URL}/skills/${skillId}/endorse`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+      if (res.ok) {
+        const newEndorsements = await res.json();
+        setSkills(skills.map(s => s._id === skillId ? { ...s, endorsements: newEndorsements } : s));
+      } else {
+        const data = await res.json();
+        toast.error(data.message || 'Failed to endorse skill');
+      }
+    } catch (err) {
+      toast.error('Failed to endorse skill');
+    }
+  };
+
   const completeness = getCompletenessScore();
 
   return (
@@ -304,11 +322,31 @@ export default function Profile() {
           <div className="mb-4">
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Teaching</h4>
             <div className="flex flex-wrap gap-2">
-              {skills.filter(s => s.type === 'teach').map(s => (
-                <span key={s._id} className="px-3 py-1.5 text-sm font-medium bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 rounded-lg border border-indigo-100 dark:border-indigo-800">
-                  {s.name} • {s.proficiencyLevel}
-                </span>
-              ))}
+              {skills.filter(s => s.type === 'teach').map(s => {
+                const isEndorsed = s.endorsements?.includes(currentUser?._id);
+                const count = s.endorsements?.length || 0;
+                return (
+                  <div key={s._id} className="flex items-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 rounded-lg border border-indigo-100 dark:border-indigo-800 pr-1">
+                    <span className="px-3 py-1.5 text-sm font-medium">
+                      {s.name} • {s.proficiencyLevel}
+                    </span>
+                    {!isOwnProfile && (
+                      <button 
+                        onClick={() => handleEndorse(s._id)} 
+                        className={`ml-1 px-2 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 ${isEndorsed ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-100 dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-800'}`}
+                        title={isEndorsed ? "Remove endorsement" : "Endorse skill"}
+                      >
+                        <Zap className="w-3 h-3" /> {count > 0 ? count : ''}
+                      </button>
+                    )}
+                    {isOwnProfile && count > 0 && (
+                      <span className="ml-1 px-2 py-1 rounded-md text-xs font-bold bg-indigo-100 dark:bg-indigo-900/50 flex items-center gap-1" title={`${count} endorsements`}>
+                        <Zap className="w-3 h-3" /> {count}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
               {skills.filter(s => s.type === 'teach').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No teaching skills added yet</p>}
             </div>
           </div>
