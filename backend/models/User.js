@@ -83,6 +83,12 @@ const userSchema = mongoose.Schema(
         ref: 'Community',
       },
     ],
+    settings: {
+      theme: {
+        type: String,
+        default: 'light',
+      },
+    },
   },
   {
     timestamps: true,

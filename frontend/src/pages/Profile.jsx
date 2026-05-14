@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
 import { useChatStore } from '../store/chatStore';
-import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload } from 'lucide-react';
+import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
 
 const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
@@ -114,6 +115,27 @@ export default function Profile() {
       navigate(`/chat/${conv._id}`);
     } catch (err) {
       alert('Failed to start conversation');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm("Are you sure you want to delete your account? This action cannot be undone and will permanently erase all your data.")) {
+      try {
+        const res = await fetch(`${API_URL}/users/me`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${currentUser.token}` }
+        });
+        if (res.ok) {
+          useAuthStore.getState().logout();
+          navigate('/login');
+          toast.success("Account deleted successfully");
+        } else {
+          const data = await res.json();
+          toast.error(data.message || "Failed to delete account");
+        }
+      } catch (err) {
+        toast.error("Failed to delete account");
+      }
     }
   };
 
@@ -428,6 +450,22 @@ export default function Profile() {
           <p className="text-center text-gray-400 dark:text-gray-500 py-8">No reviews yet</p>
         )}
       </div>
+
+      {/* Danger Zone */}
+      {isOwnProfile && (
+        <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 rounded-2xl shadow-sm">
+          <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Once you delete your account, there is no going back. All your sessions, skills, reviews, and messages will be permanently deleted.
+          </p>
+          <button
+            onClick={handleDeleteAccount}
+            className="px-4 py-2 text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" /> Delete Account
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,10 @@ import User from '../models/User.js';
 import Skill from '../models/Skill.js';
 import Review from '../models/Review.js';
 import Badge from '../models/Badge.js';
+import Session from '../models/Session.js';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import Notification from '../models/Notification.js';
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
@@ -255,6 +259,48 @@ export const uploadAvatar = async (req, res) => {
     await user.save();
 
     res.json({ avatar: filePath });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Update user theme preference
+// @route   PUT /api/users/theme
+// @access  Private
+export const updateTheme = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.settings = user.settings || {};
+    user.settings.theme = req.body.theme;
+    await user.save();
+
+    res.json({ theme: user.settings.theme });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Delete user account and all associated data
+// @route   DELETE /api/users/me
+// @access  Private
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Delete associated data
+    await Skill.deleteMany({ user: userId });
+    await Session.deleteMany({ $or: [{ mentor: userId }, { learner: userId }] });
+    await Review.deleteMany({ $or: [{ reviewer: userId }, { reviewee: userId }] });
+    await Message.deleteMany({ sender: userId });
+    await Conversation.deleteMany({ participants: userId });
+    await Notification.deleteMany({ user: userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'User account and associated data deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
