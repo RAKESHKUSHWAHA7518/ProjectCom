@@ -14,6 +14,7 @@ export const useAuthStore = create((set, get) => ({
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
@@ -32,6 +33,7 @@ export const useAuthStore = create((set, get) => ({
       const response = await fetch(`${API_URL}/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ credential }),
       });
       const data = await response.json();
@@ -50,6 +52,7 @@ export const useAuthStore = create((set, get) => ({
       const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name, email, password }),
       });
       const data = await response.json();
@@ -62,15 +65,53 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  refreshUser: async () => {
+  refreshAccessToken: async () => {
     try {
-      const currentUser = get().user;
-      if (!currentUser || !currentUser.token) return;
-      const response = await fetch(`${API_URL}/profile`, {
-        headers: { Authorization: `Bearer ${currentUser.token}` }
+      const response = await fetch(`${API_URL}/refresh`, {
+        method: 'POST',
+        credentials: 'include',
       });
       if (response.ok) {
         const data = await response.json();
+        const currentUser = get().user;
+        if (currentUser) {
+          const updatedUser = { ...currentUser, token: data.token };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          set({ user: updatedUser });
+          return data.token;
+        }
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  refreshUser: async () => {
+    try {
+      let currentUser = get().user;
+      if (!currentUser || !currentUser.token) return;
+
+      let response = await fetch(`${API_URL}/profile`, {
+        headers: { Authorization: `Bearer ${currentUser.token}` }
+      });
+
+      // If token expired, try to refresh it
+      if (response.status === 401) {
+        const newToken = await get().refreshAccessToken();
+        if (newToken) {
+          response = await fetch(`${API_URL}/profile`, {
+            headers: { Authorization: `Bearer ${newToken}` }
+          });
+        } else {
+          get().logout();
+          return;
+        }
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        currentUser = get().user; // grab again in case it changed
         const updatedUser = { ...data, token: currentUser.token };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         set({ user: updatedUser });
@@ -80,7 +121,13 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await fetch(`${API_URL}/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (e) {}
     localStorage.removeItem('user');
     set({ user: null });
   },

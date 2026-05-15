@@ -4,10 +4,27 @@ import { OAuth2Client } from 'google-auth-library';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy-client-id');
 
-// Generate JWT
+// Generate Access Token (15m)
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '15m',
+  });
+};
+
+// Generate Refresh Token (7d)
+const generateRefreshToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: '7d',
+  });
+};
+
+// Helper to set refresh token cookie
+const setTokenCookie = (res, token) => {
+  res.cookie('jwt_refresh', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
 
@@ -34,6 +51,7 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+      setTokenCookie(res, generateRefreshToken(user._id));
       res.status(201).json({
         _id: user.id,
         name: user.name,
@@ -59,6 +77,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      setTokenCookie(res, generateRefreshToken(user._id));
       res.json({
         _id: user.id,
         name: user.name,
@@ -125,6 +144,7 @@ export const googleLogin = async (req, res) => {
       await user.save();
     }
 
+    setTokenCookie(res, generateRefreshToken(user._id));
     res.json({
       _id: user.id,
       name: user.name,
@@ -137,4 +157,41 @@ export const googleLogin = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+// @access  Public
+export const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.jwt_refresh;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Not authorized, no refresh token' });
+    }
+
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, invalid token' });
+    }
+
+    res.json({
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(401).json({ message: 'Not authorized, refresh token failed' });
+  }
+};
+
+// @desc    Logout user / clear cookie
+// @route   POST /api/auth/logout
+// @access  Public
+export const logoutUser = (req, res) => {
+  res.cookie('jwt_refresh', '', {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+  res.status(200).json({ message: 'Logged out successfully' });
 };
