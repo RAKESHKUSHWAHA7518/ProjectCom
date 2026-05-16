@@ -3,8 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { connectSocket, getSocket } from '../utils/socket';
 import { Mic, MicOff, Video, VideoOff, Monitor, MonitorOff, PhoneOff, MessageSquare, Send, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function VideoCall() {
+  const { t } = useTranslation();
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -448,7 +450,7 @@ export default function VideoCall() {
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900/60">
               <div className="text-center">
                 <div className="w-16 h-16 border-4 border-gray-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-gray-400 text-sm">Waiting for participant...</p>
+                <p className="text-gray-400 text-sm">{t('Waiting for other')}</p>
               </div>
             </div>
           )}
@@ -580,11 +582,11 @@ export default function VideoCall() {
                 ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-600'
                 : 'bg-white/10 text-gray-200 hover:bg-white/20'
             }`}
-            title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+            title={isScreenSharing ? t('Stop Screen') : t('Share Screen')}
           >
             {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
           </button>
-          <span className="text-[10px] text-gray-500">{isScreenSharing ? 'Stop Share' : 'Share'}</span>
+          <span className="text-[10px] text-gray-500">{isScreenSharing ? t('Stop Screen') : t('Share Screen')}</span>
         </div>
 
         {/* Chat Button */}
@@ -613,11 +615,11 @@ export default function VideoCall() {
           <button
             onClick={endCall}
             className="w-14 h-14 sm:w-16 sm:h-16 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-red-600/40 hover:bg-red-700 transition-all hover:scale-110"
-            title="End Call"
+            title={t('End Session')}
           >
             <PhoneOff size={22} />
           </button>
-          <span className="text-[10px] text-red-400">End Call</span>
+          <span className="text-[10px] text-red-400">{t('End Session')}</span>
         </div>
 
       </div>

@@ -9,8 +9,10 @@ import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, 
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import OnboardingTour from '../components/OnboardingTour';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuthStore();
   const { skills, matches, fetchMySkills, addSkill, deleteSkill, fetchMatches } = useSkillStore();
   const { sessions, fetchSessions, updateSessionStatus } = useSessionStore();
@@ -68,11 +70,11 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Welcome back, {user?.name} 👋</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">Here's what's happening with your skill portfolio</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('Welcome back', { name: user?.name || '' })}</h1>
+          <p className="mt-1 text-gray-500 dark:text-gray-400">{t('Portfolio desc')}</p>
         </div>
         <Link to="/profile" className="self-start sm:self-auto px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
-          View Profile
+          {t('View Profile')}
         </Link>
       </div>
 
@@ -80,19 +82,19 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="p-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
           <div className="text-3xl font-bold">{user?.skillCredits || 0}</div>
-          <div className="text-sm text-blue-100 mt-1">Credits Available</div>
+          <div className="text-sm text-blue-100 mt-1">{t('Credits Available')}</div>
         </div>
         <div className="p-5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
           <div className="text-3xl font-bold">{skills.filter((s) => s.type === 'teach').length}</div>
-          <div className="text-sm text-emerald-100 mt-1">Skills Teaching</div>
+          <div className="text-sm text-emerald-100 mt-1">{t('Skills Teaching')}</div>
         </div>
         <div className="p-5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl text-white shadow-lg shadow-orange-500/20">
           <div className="text-3xl font-bold">{pendingCount}</div>
-          <div className="text-sm text-orange-100 mt-1">Pending Sessions</div>
+          <div className="text-sm text-orange-100 mt-1">{t('Pending Sessions')}</div>
         </div>
         <div className="p-5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl text-white shadow-lg shadow-purple-500/20">
           <div className="text-3xl font-bold">{completedCount}</div>
-          <div className="text-sm text-purple-100 mt-1">Completed</div>
+          <div className="text-sm text-purple-100 mt-1">{t('Completed')}</div>
         </div>
       </div>
 
@@ -100,13 +102,13 @@ export default function Dashboard() {
       {personalStats && (
         <div className="mb-8 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
           <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 text-primary-500" /> Personal Analytics
+            <BarChart2 className="w-5 h-5 text-primary-500" /> {t('Personal Analytics')}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sessions Over Time */}
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Sessions (Last 6 Months)</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('Sessions (Last 6 Months)')}</h3>
               <div className="flex items-end gap-2 h-32 mt-4">
                 {personalStats.sessionsOverTime?.length > 0 ? (
                   personalStats.sessionsOverTime.map((item, idx) => {
@@ -131,7 +133,7 @@ export default function Dashboard() {
 
             {/* Skill Popularity */}
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Skill Demand (Requests Received)</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('Skill Demand (Requests Received)')}</h3>
               <div className="space-y-4">
                 {personalStats.skillPopularity?.length > 0 ? (
                   personalStats.skillPopularity.slice(0, 4).map((skill, idx) => {
@@ -161,7 +163,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Skills Management */}
         <div id="tour-skills" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
-          <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Your Skills Portfolio</h2>
+          <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">{t('Your Skills Portfolio')}</h2>
 
           <form onSubmit={(e) => {
             e.preventDefault();
@@ -171,11 +173,11 @@ export default function Dashboard() {
             setNewSkill({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
             setCustomSkillName('');
           }} className="flex flex-col gap-3 mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Add a new skill</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('Add a new skill')}</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+                <label className="block mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{t('Category')}</label>
                 <select
                   className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                   value={newSkill.category}
@@ -188,7 +190,7 @@ export default function Dashboard() {
                 </select>
               </div>
               <div>
-                <label className="block mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Skill</label>
+                <label className="block mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{t('Skill')}</label>
                 <select
                   className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                   value={newSkill.name}
@@ -217,8 +219,8 @@ export default function Dashboard() {
 
             <div className="flex gap-2">
               <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
-                <option value="teach">I want to TEACH</option>
-                <option value="learn">I want to LEARN</option>
+                <option value="teach">{t('I want to TEACH')}</option>
+                <option value="learn">{t('I want to LEARN')}</option>
               </select>
               <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
                 <option value="beginner">Beginner</option>
@@ -231,14 +233,14 @@ export default function Dashboard() {
                 disabled={!newSkill.category || (!newSkill.name || (newSkill.name === '__custom__' && !customSkillName))}
                 className="px-5 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-lg hover:shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Add
+                {t('Add')}
               </button>
             </div>
           </form>
 
           <div className="space-y-4">
             <div>
-              <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Skills You Teach</h4>
+              <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Skills You Teach')}</h4>
               {skills.filter((s) => s.type === 'teach').length === 0 ? (
                 <p className="text-sm text-gray-400 dark:text-gray-500 p-3">Add skills you can teach others</p>
               ) : (
@@ -255,7 +257,7 @@ export default function Dashboard() {
               )}
             </div>
             <div>
-              <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-4">Skills You Want to Learn</h4>
+              <h4 className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mt-4">{t('Skills You Want to Learn')}</h4>
               {skills.filter((s) => s.type === 'learn').length === 0 ? (
                 <p className="text-sm text-gray-400 dark:text-gray-500 p-3">Add skills you want to learn</p>
               ) : (
@@ -279,8 +281,8 @@ export default function Dashboard() {
           {/* Recent Sessions */}
           <div id="tour-sessions" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recent Sessions</h2>
-              <Link to="/sessions" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">View All →</Link>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Recent Sessions')}</h2>
+              <Link to="/sessions" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">{t('View All')}</Link>
             </div>
             {recentSessions.length === 0 ? (
               <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500 flex flex-col items-center">
@@ -329,8 +331,8 @@ export default function Dashboard() {
           {/* Recommended Mentors */}
           <div id="tour-mentors" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Recommended Mentors</h2>
-              <Link to="/explore" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">Explore More →</Link>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Recommended Mentors')}</h2>
+              <Link to="/explore" className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700">{t('Explore More')}</Link>
             </div>
             <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">Based on skills you want to learn</p>
             <div className="space-y-4">
@@ -372,7 +374,7 @@ export default function Dashboard() {
                         onClick={() => handleOpenBooking(match)}
                         className="mt-3 w-full py-2 bg-gradient-to-r from-primary-600 to-indigo-600 text-white text-xs font-bold rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
                       >
-                        Book Session <ArrowRight className="w-3 h-3" />
+                        {t('Book Session')} <ArrowRight className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -386,10 +388,10 @@ export default function Dashboard() {
       {/* Quick Links */}
       <div id="tour-quick-links" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         {[
-          { to: '/explore', icon: Search, label: 'Find Mentors', color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30' },
-          { to: '/chat', icon: MessageCircle, label: 'Messages', color: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' },
-          { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', color: 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' },
-          { to: '/community', icon: Globe, label: 'Communities', color: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30' },
+          { to: '/explore', icon: Search, label: t('Find Mentors'), color: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30' },
+          { to: '/chat', icon: MessageCircle, label: t('Messages'), color: 'from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30' },
+          { to: '/leaderboard', icon: Trophy, label: t('Leaderboard'), color: 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30' },
+          { to: '/community', icon: Globe, label: t('Community'), color: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30' },
         ].map((link) => (
           <Link key={link.to} to={link.to} className={`p-4 bg-gradient-to-br ${link.color} rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col items-center justify-center`}>
             <div className="mb-2"><link.icon className="w-7 h-7 text-gray-700 dark:text-gray-300" strokeWidth={1.5} /></div>

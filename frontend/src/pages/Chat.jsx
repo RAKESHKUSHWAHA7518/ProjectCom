@@ -4,8 +4,10 @@ import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { connectSocket, getSocket } from '../utils/socket';
 import { Send, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Chat() {
+  const { t } = useTranslation();
   const { id: conversationId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -115,13 +117,13 @@ export default function Chat() {
       {/* Sidebar - Conversation List */}
       <div className={`${conversationId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800`}>
         <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Messages</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">{t('Messages')}</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="p-8 text-center text-gray-400 dark:text-gray-500">
               <div className="text-4xl mb-2">💬</div>
-              <p className="text-sm">No conversations yet. Message someone from Explore!</p>
+              <p className="text-sm">{t('No conversations yet')}</p>
             </div>
           ) : (
             conversations.map((conv) => {
@@ -138,8 +140,8 @@ export default function Chat() {
                     {other?.avatar ? <img src={other.avatar} className="w-full h-full rounded-full object-cover" /> : other?.name?.charAt(0) || '?'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{other?.name || 'Unknown'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage || 'No messages yet'}</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{other?.name || t('Unknown')}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.lastMessage || t('No messages yet')}</p>
                   </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">
                     {conv.lastMessageAt ? new Date(conv.lastMessageAt).toLocaleDateString() : ''}
@@ -164,8 +166,8 @@ export default function Chat() {
                 {getOtherUser(activeConversation)?.name?.charAt(0) || '?'}
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">{getOtherUser(activeConversation)?.name || 'Unknown'}</h3>
-                {typingUser && <p className="text-xs text-primary-500 dark:text-primary-400 animate-pulse">{typingUser} is typing...</p>}
+                <h3 className="font-bold text-gray-900 dark:text-white">{getOtherUser(activeConversation)?.name || t('Unknown')}</h3>
+                {typingUser && <p className="text-xs text-primary-500 dark:text-primary-400 animate-pulse">{typingUser} {t('is typing...')}</p>}
               </div>
             </div>
 
@@ -199,7 +201,7 @@ export default function Chat() {
                   type="text"
                   value={newMessage}
                   onChange={handleTyping}
-                  placeholder="Type a message..."
+                  placeholder={t('Type a message...')}
                   className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
                 <button
@@ -208,7 +210,7 @@ export default function Chat() {
                   className="px-5 py-3 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50 flex items-center gap-2"
                 >
                   <Send size={16} />
-                  <span className="hidden sm:inline">Send</span>
+                  <span className="hidden sm:inline">{t('Send')}</span>
                 </button>
               </div>
             </form>
@@ -217,8 +219,8 @@ export default function Chat() {
           <div className="flex-1 flex items-center justify-center text-center">
             <div>
               <div className="text-6xl mb-4">💬</div>
-              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">Select a conversation</h3>
-              <p className="text-gray-500 dark:text-gray-400 mt-2">Choose a conversation from the sidebar to start chatting</p>
+              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('Select a conversation')}</h3>
+              <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Choose a conversation')}</p>
             </div>
           </div>
         )}

@@ -6,12 +6,14 @@ import { useChatStore } from '../store/chatStore';
 import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
+import { useTranslation } from 'react-i18next';
 
 const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: currentUser } = useAuthStore();
@@ -227,7 +229,7 @@ export default function Profile() {
                       <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(profile.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{profile.rating?.toFixed(1) || '0.0'} ({profile.numReviews || 0} reviews)</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{profile.rating?.toFixed(1) || '0.0'} ({profile.numReviews || 0} {t('reviews')})</span>
                 </div>
               </div>
               {isOwnProfile ? (
@@ -235,18 +237,18 @@ export default function Profile() {
                   onClick={() => setIsEditing(!isEditing)}
                   className="self-start sm:self-auto px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-1.5"
                 >
-                  <Edit3 className="w-4 h-4" /> {isEditing ? 'Cancel' : 'Edit Profile'}
+                  <Edit3 className="w-4 h-4" /> {isEditing ? t('Cancel') : t('Edit Profile')}
                 </button>
               ) : (
                 <button
                   onClick={handleStartChat}
                   className="self-start sm:self-auto px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
                 >
-                  <MessageCircle className="w-4 h-4" /> Message
+                  <MessageCircle className="w-4 h-4" /> {t('Message')}
                 </button>
               )}
             </div>
-            <p className="mt-3 text-gray-600 dark:text-gray-400">{profile.bio || 'No bio yet.'}</p>
+            <p className="mt-3 text-gray-600 dark:text-gray-400">{profile.bio || t('No bio yet')}</p>
           </div>
         </div>
 
@@ -254,19 +256,19 @@ export default function Profile() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
           <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl text-center">
             <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{profile.skillCredits || 0}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Credits</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Credits')}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl text-center">
             <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{profile.totalSessionsAsMentor || 0}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sessions Taught</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Sessions Taught')}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl text-center">
             <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{profile.totalSessionsAsLearner || 0}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sessions Learned</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Sessions Learned')}</div>
           </div>
           <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl text-center">
             <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{profile.streak?.current || 0}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Day Streak</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Day Streak')}</div>
           </div>
         </div>
 
@@ -275,9 +277,9 @@ export default function Profile() {
           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl group relative">
             <div className="flex justify-between text-sm mb-2">
               <span className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                Profile Completeness
+                {t('Profile Completeness')}
                 {completeness < 100 && (
-                  <span className="text-xs font-normal text-gray-500">(Hover for tips)</span>
+                  <span className="text-xs font-normal text-gray-500">{t('Hover for tips')}</span>
                 )}
               </span>
               <span className="font-bold text-primary-600 dark:text-primary-400">{completeness}%</span>
@@ -290,14 +292,14 @@ export default function Profile() {
             </div>
             {completeness < 100 && (
               <div className="absolute top-full left-0 mt-2 w-64 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 text-xs">
-                <p className="font-semibold mb-1 text-gray-900 dark:text-gray-100">To reach 100%:</p>
+                <p className="font-semibold mb-1 text-gray-900 dark:text-gray-100">{t('To reach 100%')}</p>
                 <ul className="list-disc pl-4 space-y-1 text-gray-600 dark:text-gray-400">
-                  {!profile.name && <li>Add your name</li>}
-                  {!profile.bio && <li>Add a short bio</li>}
-                  {!profile.location && <li>Add your location</li>}
-                  {!profile.avatar && <li>Upload an avatar</li>}
-                  {skills.filter(s => s.type === 'teach').length === 0 && <li>Add skills you can teach</li>}
-                  {skills.filter(s => s.type === 'learn').length === 0 && <li>Add skills you want to learn</li>}
+                  {!profile.name && <li>{t('Add your name')}</li>}
+                  {!profile.bio && <li>{t('Add a short bio')}</li>}
+                  {!profile.location && <li>{t('Add your location')}</li>}
+                  {!profile.avatar && <li>{t('Upload an avatar')}</li>}
+                  {skills.filter(s => s.type === 'teach').length === 0 && <li>{t('Add skills you can teach')}</li>}
+                  {skills.filter(s => s.type === 'learn').length === 0 && <li>{t('Add skills you want to learn')}</li>}
                 </ul>
               </div>
             )}
@@ -308,31 +310,31 @@ export default function Profile() {
       {/* Edit Form */}
       {isEditing && (
         <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Edit Profile</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Edit Profile')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Name')}</label>
               <input className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" value={editData.name || ''} onChange={(e) => setEditData({ ...editData, name: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
-              <input className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="City, Country" value={editData.location || ''} onChange={(e) => setEditData({ ...editData, location: e.target.value })} />
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Location')}</label>
+              <input className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" placeholder={t('City, Country')} value={editData.location || ''} onChange={(e) => setEditData({ ...editData, location: e.target.value })} />
             </div>
             <div className="md:col-span-2">
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Bio</label>
-              <textarea className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" rows="3" placeholder="Tell the community about yourself..." value={editData.bio || ''} onChange={(e) => setEditData({ ...editData, bio: e.target.value })} />
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Bio')}</label>
+              <textarea className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" rows="3" placeholder={t('Tell the community about yourself...')} value={editData.bio || ''} onChange={(e) => setEditData({ ...editData, bio: e.target.value })} />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">GitHub URL</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('GitHub URL')}</label>
               <input className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="https://github.com/username" value={editData.socialLinks?.github || ''} onChange={(e) => setEditData({ ...editData, socialLinks: { ...editData.socialLinks, github: e.target.value } })} />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">LinkedIn URL</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('LinkedIn URL')}</label>
               <input className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="https://linkedin.com/in/username" value={editData.socialLinks?.linkedin || ''} onChange={(e) => setEditData({ ...editData, socialLinks: { ...editData.socialLinks, linkedin: e.target.value } })} />
             </div>
           </div>
           <button onClick={handleSave} className="mt-4 px-6 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition">
-            Save Changes
+            {t('Save Changes')}
           </button>
         </div>
       )}
@@ -340,9 +342,9 @@ export default function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Skills */}
         <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Skills</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Skills')}</h2>
           <div className="mb-4">
-            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Teaching</h4>
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Teaching')}</h4>
             <div className="flex flex-wrap gap-2">
               {skills.filter(s => s.type === 'teach').map(s => {
                 const isEndorsed = s.endorsements?.includes(currentUser?._id);
@@ -369,25 +371,25 @@ export default function Profile() {
                   </div>
                 );
               })}
-              {skills.filter(s => s.type === 'teach').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No teaching skills added yet</p>}
+              {skills.filter(s => s.type === 'teach').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No teaching skills')}</p>}
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Learning</h4>
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Learning')}</h4>
             <div className="flex flex-wrap gap-2">
               {skills.filter(s => s.type === 'learn').map(s => (
                 <span key={s._id} className="px-3 py-1.5 text-sm font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-800">
                   {s.name} • {s.proficiencyLevel}
                 </span>
               ))}
-              {skills.filter(s => s.type === 'learn').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No learning skills added yet</p>}
+              {skills.filter(s => s.type === 'learn').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No learning skills')}</p>}
             </div>
           </div>
         </div>
 
         {/* Badges */}
         <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Badges & Achievements</h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Badges & Achievements')}</h2>
           {profile.badges && profile.badges.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {profile.badges.map((badge, i) => {
@@ -413,7 +415,7 @@ export default function Profile() {
           ) : (
             <div className="py-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
               <Medal className="w-12 h-12 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-              <p className="text-sm">No badges earned yet. Complete sessions to earn badges!</p>
+              <p className="text-sm">{t('No badges earned')}</p>
             </div>
           )}
         </div>
@@ -421,7 +423,7 @@ export default function Profile() {
 
       {/* Reviews */}
       <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Reviews ({reviews.length})</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Reviews')} ({reviews.length})</h2>
         {reviews.length > 0 ? (
           <div className="space-y-4">
             {reviews.map((review) => (
@@ -447,22 +449,22 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <p className="text-center text-gray-400 dark:text-gray-500 py-8">No reviews yet</p>
+          <p className="text-center text-gray-400 dark:text-gray-500 py-8">{t('No reviews yet')}</p>
         )}
       </div>
 
       {/* Danger Zone */}
       {isOwnProfile && (
         <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 rounded-2xl shadow-sm">
-          <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Danger Zone</h2>
+          <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">{t('Danger Zone')}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Once you delete your account, there is no going back. All your sessions, skills, reviews, and messages will be permanently deleted.
+            {t('Danger Text')}
           </p>
           <button
             onClick={handleDeleteAccount}
             className="px-4 py-2 text-sm font-medium bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition flex items-center gap-2"
           >
-            <Trash2 className="w-4 h-4" /> Delete Account
+            <Trash2 className="w-4 h-4" /> {t('Delete Account')}
           </button>
         </div>
       )}

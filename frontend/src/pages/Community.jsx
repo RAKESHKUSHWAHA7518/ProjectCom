@@ -4,8 +4,10 @@ import { useAuthStore } from '../store/authStore';
 import { useCommunityStore } from '../store/communityStore';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
+import { useTranslation } from 'react-i18next';
 
 export default function Community() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -155,14 +157,14 @@ export default function Community() {
       <div className="py-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Community Spaces</h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">Join skill-specific communities and connect with others</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('Community Spaces')}</h1>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">{t('Join skill-specific communities')}</p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="self-start sm:self-auto px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
           >
-            + Create Community
+            {t('+ Create Community')}
           </button>
         </div>
 
@@ -173,8 +175,8 @@ export default function Community() {
         ) : communities.length === 0 ? (
           <div className="py-20 text-center">
             <div className="text-6xl mb-4">🌐</div>
-            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">No communities yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">Be the first to create a community!</p>
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No communities yet')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Be the first to create')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -193,15 +195,15 @@ export default function Community() {
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">{community.description || 'No description'}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">👥 {community.memberCount || 0} members</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">👥 {community.memberCount || 0} {t('members')}</span>
                   {community.isMember ? (
-                    <span className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg font-medium">Joined</span>
+                    <span className="text-xs px-2 py-1 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg font-medium">{t('Joined')}</span>
                   ) : (
                     <button
                       onClick={(e) => { e.stopPropagation(); joinCommunity(community._id); }}
                       className="text-xs px-3 py-1.5 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-400 rounded-lg font-medium hover:bg-primary-100 dark:hover:bg-primary-900/40 transition"
                     >
-                      Join
+                      {t('Join')}
                     </button>
                   )}
                 </div>
@@ -214,11 +216,11 @@ export default function Community() {
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Create Community</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('Create Community')}</h3>
               <form onSubmit={handleCreateCommunity} className="space-y-4">
                 <div className="flex gap-3">
                   <div>
-                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Icon</label>
+                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Icon')}</label>
                     <select
                       className="px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-2xl"
                       value={newCommunity.icon}
@@ -230,10 +232,10 @@ export default function Community() {
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                    <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Name')}</label>
                     <input
                       className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                      placeholder="e.g. React Developers"
+                      placeholder={t('e.g. React Developers')}
                       value={newCommunity.name}
                       onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })}
                       required
@@ -241,28 +243,28 @@ export default function Community() {
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Category')}</label>
                   <input
                     className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                    placeholder="e.g. Programming"
+                    placeholder={t('e.g. Programming')}
                     value={newCommunity.category}
                     onChange={(e) => setNewCommunity({ ...newCommunity, category: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Description')}</label>
                   <textarea
                     className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                     rows="3"
-                    placeholder="What is this community about?"
+                    placeholder={t('What is this community about?')}
                     value={newCommunity.description}
                     onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })}
                   />
                 </div>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancel</button>
-                  <button type="submit" className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition">Create</button>
+                  <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition">{t('Cancel')}</button>
+                  <button type="submit" className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition">{t('Create')}</button>
                 </div>
               </form>
             </div>
@@ -294,7 +296,7 @@ export default function Community() {
     <div className="py-8 max-w-3xl mx-auto">
       {/* Back */}
       <button onClick={() => navigate('/community')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4 inline-block">
-        ← Back to Communities
+        {t('Back to Communities')}
       </button>
 
       {/* Community header */}
@@ -306,14 +308,14 @@ export default function Community() {
             <p className="text-sm text-gray-500 dark:text-gray-400">{activeCommunity.description}</p>
           </div>
           {isMember ? (
-            <button onClick={() => leaveCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">Leave</button>
+            <button onClick={() => leaveCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">{t('Leave')}</button>
           ) : (
-            <button onClick={() => joinCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">Join Community</button>
+            <button onClick={() => joinCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">{t('Join Community')}</button>
           )}
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>👥 {activeCommunity.members?.length || 0} members</span>
-          <span>📝 {activeCommunity.posts?.length || 0} posts</span>
+          <span>👥 {activeCommunity.members?.length || 0} {t('members')}</span>
+          <span>📝 {activeCommunity.posts?.length || 0} {t('posts')}</span>
           <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-md">{activeCommunity.category}</span>
         </div>
       </div>
@@ -324,13 +326,13 @@ export default function Community() {
           <textarea
             className="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
             rows="3"
-            placeholder="Share something with the community..."
+            placeholder={t('Share something')}
             value={newPostContent}
             onChange={(e) => setNewPostContent(e.target.value)}
           />
           <div className="flex justify-end mt-2">
             <button type="submit" disabled={!newPostContent.trim()} className="px-5 py-2 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition disabled:opacity-50">
-              Post
+              {t('Post')}
             </button>
           </div>
         </form>
@@ -341,7 +343,7 @@ export default function Community() {
         {(!activeCommunity.posts || activeCommunity.posts.length === 0) ? (
           <div className="py-12 text-center text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
             <div className="text-4xl mb-2">📝</div>
-            <p>No posts yet. Be the first to share!</p>
+            <p>{t('No posts yet')}</p>
           </div>
         ) : (
           sortedPosts.map((post) => {
@@ -378,13 +380,13 @@ export default function Community() {
                           onClick={() => handleStartEditPost(post)}
                           className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-950/30 rounded-lg transition"
                         >
-                          ✏️ Edit
+                          ✏️ {t('Edit')}
                         </button>
                         <button
                           onClick={() => handleDeletePost(post._id)}
                           className="px-2 py-1 text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
                         >
-                          🗑️ Delete
+                          🗑️ {t('Delete')}
                         </button>
                       </>
                     )}
@@ -402,8 +404,8 @@ export default function Community() {
                       autoFocus
                     />
                     <div className="flex gap-2 mt-2">
-                      <button onClick={() => handleSaveEditPost(post._id)} className="px-4 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">Save</button>
-                      <button onClick={() => setEditingPostId(null)} className="px-4 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">Cancel</button>
+                      <button onClick={() => handleSaveEditPost(post._id)} className="px-4 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">{t('Save')}</button>
+                      <button onClick={() => setEditingPostId(null)} className="px-4 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">{t('Cancel')}</button>
                     </div>
                   </div>
                 ) : (
@@ -449,8 +451,8 @@ export default function Community() {
                                 autoFocus
                               />
                               <div className="flex gap-2 mt-1.5">
-                                <button onClick={handleSaveEditReply} className="px-3 py-1 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">Save</button>
-                                <button onClick={() => setEditingReply(null)} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">Cancel</button>
+                                <button onClick={handleSaveEditReply} className="px-3 py-1 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">{t('Save')}</button>
+                                <button onClick={() => setEditingReply(null)} className="px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">{t('Cancel')}</button>
                               </div>
                             </div>
                           ) : (
@@ -467,14 +469,14 @@ export default function Community() {
                   <div className="mt-3 flex gap-2">
                     <input
                       type="text"
-                      placeholder="Write a reply..."
+                      placeholder={t('Write a reply...')}
                       className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                       value={replyContent[post._id] || ''}
                       onChange={(e) => setReplyContent({ ...replyContent, [post._id]: e.target.value })}
                       onKeyDown={(e) => e.key === 'Enter' && handleReply(post._id)}
                     />
                     <button onClick={() => handleReply(post._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">
-                      Reply
+                      {t('Reply')}
                     </button>
                   </div>
                 )}

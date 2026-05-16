@@ -8,10 +8,12 @@ import toast from 'react-hot-toast';
 import { Search, MapPin, Star, Coins, Zap } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
+import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Explore() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const { getOrCreateConversation } = useChatStore();
@@ -81,8 +83,8 @@ export default function Explore() {
   return (
     <div className="py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Explore Mentors</h1>
-        <p className="mt-1 text-gray-500 dark:text-gray-400">Discover skilled people ready to share their knowledge</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('Explore Mentors')}</h1>
+        <p className="mt-1 text-gray-500 dark:text-gray-400">{t('Discover skilled people')}</p>
       </div>
 
       {/* Search & Filters */}
@@ -90,36 +92,36 @@ export default function Explore() {
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Search Skills</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Search Skills')}</label>
               <input
                 type="text"
-                placeholder="e.g. React, Guitar, Photography..."
+                placeholder={t('Search Placeholder')}
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setSelectedSkill(''); }}
               />
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Category')}</label>
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={category}
                 onChange={(e) => { setCategory(e.target.value); setSelectedSkill(''); setPage(1); }}
               >
-                <option value="">All Categories</option>
+                <option value="">{t('All Categories')}</option>
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>{cat.icon} {cat.value}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Specific Skill</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Specific Skill')}</label>
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={selectedSkill}
                 onChange={(e) => { setSelectedSkill(e.target.value); if (e.target.value) setSearch(''); }}
               >
-                <option value="">{category ? 'All Skills in Category' : 'Select category first or type above'}</option>
+                <option value="">{category ? t('All Skills in Category') : t('Select category first')}</option>
                 {category && SKILLS_BY_CATEGORY[category]?.map((skill) => (
                   <option key={skill} value={skill}>{skill}</option>
                 ))}
@@ -129,29 +131,29 @@ export default function Explore() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-4 items-end">
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Min Rating</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Min Rating')}</label>
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={minRating}
                 onChange={(e) => setMinRating(e.target.value)}
               >
-                <option value="">Any</option>
+                <option value="">{t('Any')}</option>
                 <option value="3">3+ ⭐</option>
                 <option value="4">4+ ⭐</option>
                 <option value="4.5">4.5+ ⭐</option>
               </select>
             </div>
             <div>
-              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
+              <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Sort By')}</label>
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
               >
-                <option value="">Newest</option>
-                <option value="rating">Highest Rated</option>
-                <option value="reviews">Most Reviewed</option>
-                <option value="sessions">Most Experienced</option>
+                <option value="">{t('Newest')}</option>
+                <option value="rating">{t('Highest Rated')}</option>
+                <option value="reviews">{t('Most Reviewed')}</option>
+                <option value="sessions">{t('Most Experienced')}</option>
               </select>
             </div>
             <div className="sm:col-span-2 lg:col-auto flex gap-2">
@@ -159,7 +161,7 @@ export default function Explore() {
                 type="submit"
                 className="flex-1 lg:flex-none px-6 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
-                <Search className="w-4 h-4" /> Search
+                <Search className="w-4 h-4" /> {t('Search')}
               </button>
               {(search || category || selectedSkill || minRating) && (
                 <button
@@ -167,7 +169,7 @@ export default function Explore() {
                   onClick={() => { setSearch(''); setCategory(''); setSelectedSkill(''); setMinRating(''); setSortBy(''); setPage(1); fetchExplore(); }}
                   className="flex-1 lg:flex-none px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 >
-                  Clear Filters
+                  {t('Clear Filters')}
                 </button>
               )}
             </div>
@@ -207,8 +209,8 @@ export default function Explore() {
       ) : results.length === 0 ? (
         <div className="py-20 text-center flex flex-col items-center">
           <Search className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">No mentors found</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Try adjusting your search filters</p>
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No mentors found')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Try adjusting filters')}</p>
         </div>
       ) : (
         <>
@@ -260,19 +262,19 @@ export default function Explore() {
                     onClick={() => handleOpenBooking(mentor, teachSkills)}
                     className="w-full sm:flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl hover:shadow-lg transition-all"
                   >
-                    Book Session
+                    {t('Book Session')}
                   </button>
                   <button
                     onClick={() => handleStartChat(mentor._id)}
                     className="w-full sm:flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition-all"
                   >
-                    Message
+                    {t('Message')}
                   </button>
                   <button
                     onClick={() => navigate(`/profile/${mentor._id}`)}
                     className="w-full sm:flex-1 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
                   >
-                    View Profile
+                    {t('View Profile')}
                   </button>
                 </div>
               </div>

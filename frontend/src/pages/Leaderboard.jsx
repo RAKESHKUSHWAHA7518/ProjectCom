@@ -3,9 +3,13 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { CATEGORIES } from '../data/skillsData';
 
+import { CATEGORIES } from '../data/skillsData';
+import { useTranslation } from 'react-i18next';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Leaderboard() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [leaders, setLeaders] = useState([]);
   const [category, setCategory] = useState('');
@@ -49,8 +53,8 @@ export default function Leaderboard() {
   return (
     <div className="py-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🏆 Leaderboard</h1>
-        <p className="mt-2 text-gray-500 dark:text-gray-400">Our top {type === 'learners' ? 'learners' : 'mentors'} in the community</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🏆 {t('Leaderboard')}</h1>
+        <p className="mt-2 text-gray-500 dark:text-gray-400">{type === 'learners' ? t('Our top learners') : t('Our top mentors')}</p>
       </div>
 
       {/* Type Toggle */}
@@ -62,7 +66,7 @@ export default function Leaderboard() {
               type === 'mentors' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Top Mentors
+            {t('Top Mentors')}
           </button>
           <button
             onClick={() => setType('learners')}
@@ -70,7 +74,7 @@ export default function Leaderboard() {
               type === 'learners' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
-            Top Learners
+            {t('Top Learners')}
           </button>
         </div>
       </div>
@@ -83,7 +87,7 @@ export default function Leaderboard() {
             !category ? 'bg-primary-600 text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
         >
-          All
+          {t('All')}
         </button>
         {CATEGORIES.map((cat) => (
           <button
@@ -105,8 +109,8 @@ export default function Leaderboard() {
       ) : leaders.length === 0 ? (
         <div className="py-20 text-center">
           <div className="text-6xl mb-4">🏅</div>
-          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">No leaders yet</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Complete sessions and earn reviews to appear here!</p>
+          <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No leaders yet')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Complete sessions to appear')}</p>
         </div>
       ) : (
         <div className="max-w-3xl mx-auto space-y-3">
@@ -134,12 +138,12 @@ export default function Leaderboard() {
                     {type === 'mentors' ? (
                       <>
                         <div className="text-yellow-500 mt-1">{'⭐'.repeat(Math.round(leader.rating || 0))}</div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{leader.rating?.toFixed(1)} ({leader.numReviews} reviews)</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{leader.rating?.toFixed(1)} ({leader.numReviews} {t('reviews')})</p>
                       </>
                     ) : (
                       <div className="mt-1">
                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{leader.totalSessionsAsLearner}</span>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Sessions Learned</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('Sessions Learned')}</p>
                       </div>
                     )}
                     <div className="flex flex-wrap justify-center gap-1 mt-2">
@@ -173,12 +177,12 @@ export default function Leaderboard() {
                       <span className="text-yellow-500">⭐</span>
                       <span className="font-bold text-gray-900 dark:text-white">{leader.rating?.toFixed(1)}</span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{leader.numReviews} reviews</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{leader.numReviews} {t('reviews')}</p>
                   </>
                 ) : (
                   <>
                     <div className="font-bold text-emerald-600 dark:text-emerald-400">{leader.totalSessionsAsLearner}</div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">learned</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('learned')}</p>
                   </>
                 )}
               </div>
