@@ -3,6 +3,7 @@ import {
   createSession,
   getMySessions,
   updateSessionStatus,
+  addSessionNote,
 } from '../controllers/sessionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -14,5 +15,8 @@ router.route('/')
 
 router.route('/:id')
   .put(protect, updateSessionStatus);
+
+router.route('/:id/notes')
+  .post(protect, addSessionNote);
 
 export default router;

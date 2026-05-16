@@ -32,6 +32,20 @@ const sessionSchema = mongoose.Schema(
     notes: {
       type: String,
     },
+    sharedNotes: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        content: String,
+        resources: [String],
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      }
+    ],
     creditsExchanged: {
       type: Number,
       default: 1,

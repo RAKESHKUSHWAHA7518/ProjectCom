@@ -12,6 +12,7 @@ import { useAuthStore } from './store/authStore'
 import { useNotificationStore } from './store/notificationStore'
 import { useThemeStore } from './store/themeStore'
 import { connectSocket, disconnectSocket } from './utils/socket'
+import { useTranslation } from 'react-i18next'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -61,6 +62,7 @@ const slideDown = {
    HOME / HERO SECTION
    ============================================================ */
 function Home() {
+  const { t } = useTranslation()
   const [stats, setStats] = useState(null)
 
   useEffect(() => {
@@ -73,22 +75,22 @@ function Home() {
   const features = [
     {
       icon: RefreshCw,
-      title: 'Barter Skills',
-      desc: 'Teach coding, learn guitar. Exchange what you know for what you need.',
+      title: t('Barter Skills'),
+      desc: t('Barter Desc'),
       color: 'text-blue-500',
       bg: 'bg-blue-50 dark:bg-blue-950/40',
     },
     {
       icon: Video,
-      title: 'Live Video Sessions',
-      desc: 'Real-time video calls with screen sharing and in-app chat.',
+      title: t('Live Video'),
+      desc: t('Video Desc'),
       color: 'text-violet-500',
       bg: 'bg-violet-50 dark:bg-violet-950/40',
     },
     {
       icon: Award,
-      title: 'Earn & Grow',
-      desc: 'Earn credits, badges, and climb the leaderboard as you help others.',
+      title: t('Earn Grow'),
+      desc: t('Earn Desc'),
       color: 'text-amber-500',
       bg: 'bg-amber-50 dark:bg-amber-950/40',
     },
@@ -124,9 +126,9 @@ function Home() {
           custom={0}
           className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]"
         >
-          <span className="text-gray-900 dark:text-white">Exchange Skills.</span>{' '}
+          <span className="text-gray-900 dark:text-white">{t('Exchange Skills')}</span>{' '}
           <span className="bg-gradient-to-r from-primary-500 via-indigo-500 to-accent-500 bg-clip-text text-transparent">
-            Grow Together.
+            {t('Grow Together')}
           </span>
         </motion.h1>
 
@@ -135,8 +137,7 @@ function Home() {
           custom={1}
           className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-400 leading-relaxed"
         >
-          A peer-to-peer ecosystem where you teach what you know and learn what you don't.
-          Connect with mentors globally, earn credits, and level up your skills!
+          {t('Hero Description')}
         </motion.p>
 
         {/* CTA buttons */}
@@ -146,14 +147,14 @@ function Home() {
             className="group inline-flex items-center gap-2 px-8 py-3.5 font-semibold text-white rounded-2xl bg-gradient-to-r from-primary-600 via-indigo-600 to-accent-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300"
           >
             <Sparkles className="w-5 h-5" />
-            Explore Skills
+            {t('Explore Skills')}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             to="/register"
             className="inline-flex items-center gap-2 px-8 py-3.5 font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-750 shadow-sm hover:shadow-md transition-all duration-300"
           >
-            Join the Community
+            {t('Join the Community')}
           </Link>
         </motion.div>
       </motion.div>
@@ -328,10 +329,27 @@ function ThemeToggle() {
   )
 }
 
+function LanguageToggle() {
+  const { i18n } = useTranslation();
+  
+  return (
+    <select 
+      value={i18n.language} 
+      onChange={(e) => i18n.changeLanguage(e.target.value)}
+      className="p-1.5 ml-1 text-sm font-semibold text-gray-500 bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+    >
+      <option value="en">EN</option>
+      <option value="hi">HI</option>
+      <option value="es">ES</option>
+    </select>
+  );
+}
+
 /* ============================================================
    NAVBAR
    ============================================================ */
 function Navbar({ onSearchClick }) {
+  const { t } = useTranslation()
   const { user, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const location = useLocation()
@@ -342,12 +360,12 @@ function Navbar({ onSearchClick }) {
   }
 
   const navLinks = [
-    { to: '/explore', label: 'Explore', icon: Search },
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/sessions', label: 'Sessions', icon: CalendarDays },
-    { to: '/chat', label: 'Chat', icon: MessageCircle },
-    { to: '/leaderboard', label: 'Rankings', icon: Trophy },
-    { to: '/community', label: 'Community', icon: Globe },
+    { to: '/explore', label: t('Explore'), icon: Search },
+    { to: '/dashboard', label: t('Dashboard'), icon: LayoutDashboard },
+    { to: '/sessions', label: t('Sessions'), icon: CalendarDays },
+    { to: '/chat', label: t('Chat'), icon: MessageCircle },
+    { to: '/leaderboard', label: t('Rankings'), icon: Trophy },
+    { to: '/community', label: t('Community'), icon: Globe },
   ]
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
@@ -400,6 +418,7 @@ function Navbar({ onSearchClick }) {
                 <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
                 <ThemeToggle />
+                <LanguageToggle />
                 <NotificationBell />
 
                  <Link
@@ -419,17 +438,18 @@ function Navbar({ onSearchClick }) {
             ) : (
               <>
                 <ThemeToggle />
+                <LanguageToggle />
                 <Link
                   to="/login"
                   className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
-                  Sign In
+                  {t('Sign In')}
                 </Link>
                 <Link
                   to="/register"
                   className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-accent-600 rounded-xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300"
                 >
-                  Get Started
+                  {t('Get Started')}
                 </Link>
               </>
             )}

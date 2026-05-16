@@ -77,4 +77,27 @@ export const useSessionStore = create((set, get) => ({
       throw error;
     }
   },
+
+  addSessionNote: async (sessionId, content, resources) => {
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/sessions/${sessionId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ content, resources }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      set((state) => ({
+        sessions: state.sessions.map((s) => (s._id === sessionId ? data : s)),
+      }));
+      return data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
 }));

@@ -104,3 +104,41 @@ export const updateSessionStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Add post-session notes and resources
+// @route   POST /api/sessions/:id/notes
+// @access  Private
+export const addSessionNote = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: 'Session not found' });
+    
+    if (session.mentor.toString() !== req.user.id && session.learner.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to add notes to this session' });
+    }
+
+    const { content, resources } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ message: 'Note content is required' });
+    }
+
+    session.sharedNotes.push({
+      user: req.user.id,
+      content,
+      resources: resources || [],
+    });
+    
+    await session.save();
+    
+    const updatedSession = await Session.findById(req.params.id)
+      .populate('mentor', 'name avatar')
+      .populate('learner', 'name avatar')
+      .populate('skill', 'name category')
+      .populate('sharedNotes.user', 'name avatar');
+      
+    res.json(updatedSession);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

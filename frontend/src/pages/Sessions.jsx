@@ -8,8 +8,10 @@ import toast from 'react-hot-toast';
 
 export default function Sessions() {
   const { user } = useAuthStore();
-  const { sessions, fetchSessions, updateSessionStatus, isLoading } = useSessionStore();
+  const { sessions, fetchSessions, updateSessionStatus, addSessionNote, isLoading } = useSessionStore();
   const [filter, setFilter] = useState('upcoming'); // 'upcoming', 'past', 'pending'
+  const [activeNoteSession, setActiveNoteSession] = useState(null);
+  const [noteContent, setNoteContent] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +24,18 @@ export default function Sessions() {
       toast.success(`Session ${status}`);
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleAddNote = async (sessionId) => {
+    if (!noteContent.trim()) return;
+    try {
+      await addSessionNote(sessionId, noteContent, []);
+      toast.success('Note added');
+      setNoteContent('');
+      setActiveNoteSession(null);
+    } catch (err) {
+      toast.error('Failed to add note');
     }
   };
 
@@ -175,6 +189,62 @@ export default function Sessions() {
                     </button>
                   )}
                 </div>
+
+                {/* Shared Notes Section */}
+                {(session.status === 'completed' || session.status === 'accepted') && (
+                  <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">Shared Notes & Resources</h4>
+                    
+                    {session.sharedNotes && session.sharedNotes.length > 0 && (
+                      <div className="space-y-4 mb-4">
+                        {session.sharedNotes.map((note, idx) => (
+                          <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Avatar src={note.user?.avatar} name={note.user?.name} size="sm" />
+                              <span className="text-xs font-semibold dark:text-white">{note.user?.name}</span>
+                              <span className="text-[10px] text-gray-400">{new Date(note.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{note.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeNoteSession === session._id ? (
+                      <div className="flex flex-col gap-2">
+                        <textarea
+                          autoFocus
+                          value={noteContent}
+                          onChange={(e) => setNoteContent(e.target.value)}
+                          placeholder="Type your notes or paste resource links..."
+                          className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500"
+                          rows="3"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => { setActiveNoteSession(null); setNoteContent(''); }}
+                            className="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => handleAddNote(session._id)}
+                            className="px-4 py-2 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                          >
+                            Save Note
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setActiveNoteSession(session._id)}
+                        className="w-full py-2 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-primary-600 hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
+                      >
+                        + Add Session Note
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
