@@ -89,6 +89,10 @@ const userSchema = mongoose.Schema(
         default: 'light',
       },
     },
+    claimedChallenges: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

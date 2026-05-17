@@ -39,6 +39,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import communityRoutes from './routes/communityRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
+import challengeRoutes from './routes/challengeRoutes.js';
 
 app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);
@@ -51,6 +52,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/challenges', challengeRoutes);
 
 app.get('/', (req, res) => {
   res.send('SkillSwap API is running...');

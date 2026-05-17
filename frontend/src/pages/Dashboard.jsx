@@ -9,6 +9,7 @@ import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, 
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import OnboardingTour from '../components/OnboardingTour';
+import WeeklyChallenges from '../components/WeeklyChallenges';
 import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
@@ -278,6 +279,9 @@ export default function Dashboard() {
 
         {/* Right Column */}
         <div className="space-y-8">
+          {/* Weekly Challenges */}
+          <WeeklyChallenges />
+
           {/* Recent Sessions */}
           <div id="tour-sessions" className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between mb-4">

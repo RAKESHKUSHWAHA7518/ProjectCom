@@ -197,7 +197,16 @@ const resources = {
       "End Session": "End Session",
       "Share Screen": "Share Screen",
       "Stop Screen": "Stop Screen",
-      "Waiting for other": "Waiting for other participant to join..."
+      "Waiting for other": "Waiting for other participant to join...",
+      "Weekly Challenges": "Weekly Challenges",
+      "Claim Reward": "Claim Reward",
+      "Claimed": "Claimed",
+      "The Skill Sharer": "The Skill Sharer",
+      "Complete 1 session as a Mentor this week": "Complete 1 session as a Mentor this week",
+      "The Avid Learner": "The Avid Learner",
+      "Complete 1 session as a Learner this week": "Complete 1 session as a Learner this week",
+      "Community Voice": "Community Voice",
+      "Write 1 post in any community this week": "Write 1 post in any community this week"
     }
   },
   hi: {
@@ -394,7 +403,16 @@ const resources = {
       "End Session": "सत्र समाप्त करें",
       "Share Screen": "स्क्रीन साझा करें",
       "Stop Screen": "स्क्रीन रोकें",
-      "Waiting for other": "अन्य प्रतिभागी के शामिल होने की प्रतीक्षा कर रहा है..."
+      "Waiting for other": "अन्य प्रतिभागी के शामिल होने की प्रतीक्षा कर रहा है...",
+      "Weekly Challenges": "साप्ताहिक चुनौतियाँ",
+      "Claim Reward": "पुरस्कार का दावा करें",
+      "Claimed": "दावा किया गया",
+      "The Skill Sharer": "कौशल साझा करने वाला",
+      "Complete 1 session as a Mentor this week": "इस सप्ताह मेंटर के रूप में 1 सत्र पूरा करें",
+      "The Avid Learner": "उत्सुक शिक्षार्थी",
+      "Complete 1 session as a Learner this week": "इस सप्ताह शिक्षार्थी के रूप में 1 सत्र पूरा करें",
+      "Community Voice": "सामुदायिक आवाज",
+      "Write 1 post in any community this week": "इस सप्ताह किसी भी समुदाय में 1 पोस्ट लिखें"
     }
   },
   es: {
@@ -591,7 +609,16 @@ const resources = {
       "End Session": "Finalizar Sesión",
       "Share Screen": "Compartir Pantalla",
       "Stop Screen": "Detener Pantalla",
-      "Waiting for other": "Esperando a que el otro participante se una..."
+      "Waiting for other": "Esperando a que el otro participante se una...",
+      "Weekly Challenges": "Desafíos Semanales",
+      "Claim Reward": "Reclamar Recompensa",
+      "Claimed": "Reclamado",
+      "The Skill Sharer": "El Compartidor de Habilidades",
+      "Complete 1 session as a Mentor this week": "Completa 1 sesión como Mentor esta semana",
+      "The Avid Learner": "El Aprendiz Ávido",
+      "Complete 1 session as a Learner this week": "Completa 1 sesión como Aprendiz esta semana",
+      "Community Voice": "Voz de la Comunidad",
+      "Write 1 post in any community this week": "Escribe 1 publicación en cualquier comunidad esta semana"
     }
   }
 };
