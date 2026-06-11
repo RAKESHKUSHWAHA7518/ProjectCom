@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const useReviewStore = create((set) => ({
   reviews: [],
+  myGivenReviews: [],
   isLoading: false,
   error: null,
 
@@ -22,7 +23,11 @@ export const useReviewStore = create((set) => ({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      set((state) => ({ reviews: [data, ...state.reviews], isLoading: false }));
+      set((state) => ({ 
+        reviews: [data, ...state.reviews],
+        myGivenReviews: [data, ...state.myGivenReviews],
+        isLoading: false 
+      }));
       return data;
     } catch (error) {
       set({ error: error.message, isLoading: false });
@@ -40,6 +45,21 @@ export const useReviewStore = create((set) => ({
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       set({ reviews: data, isLoading: false });
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+
+  fetchMyGivenReviews: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user } = useAuthStore.getState();
+      const response = await fetch(`${API_URL}/reviews/given`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      set({ myGivenReviews: data, isLoading: false });
     } catch (error) {
       set({ error: error.message, isLoading: false });
     }

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
 import { useChatStore } from '../store/chatStore';
-import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2 } from 'lucide-react';
+import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
 import { useTranslation } from 'react-i18next';

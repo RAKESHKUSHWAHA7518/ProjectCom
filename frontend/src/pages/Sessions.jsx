@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useSessionStore } from '../store/sessionStore';
+import { useReviewStore } from '../store/reviewStore';
 import Avatar from '../components/Avatar';
-import { Calendar, Clock, Video, CheckCircle, XCircle, AlertCircle, ChevronRight, MessageSquare } from 'lucide-react';
+import ReviewModal from '../components/ReviewModal';
+import { Calendar, Clock, Video, CheckCircle, XCircle, AlertCircle, ChevronRight, MessageSquare, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -11,21 +13,41 @@ export default function Sessions() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const { sessions, fetchSessions, updateSessionStatus, addSessionNote, isLoading } = useSessionStore();
+  const { myGivenReviews, fetchMyGivenReviews, createReview } = useReviewStore();
   const [filter, setFilter] = useState('upcoming'); // 'upcoming', 'past', 'pending'
   const [activeNoteSession, setActiveNoteSession] = useState(null);
   const [noteContent, setNoteContent] = useState('');
+  const [reviewSession, setReviewSession] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchSessions();
-  }, [fetchSessions]);
+    fetchMyGivenReviews();
+  }, [fetchSessions, fetchMyGivenReviews]);
 
   const handleStatusUpdate = async (sessionId, status) => {
     try {
       await updateSessionStatus(sessionId, status);
       toast.success(`Session ${status}`);
+      if (status === 'completed') {
+        const completedSession = sessions.find(s => s._id === sessionId);
+        if (completedSession) {
+          setReviewSession(completedSession);
+        }
+      }
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleReviewSubmit = async (rating, comment) => {
+    try {
+      await createReview(reviewSession._id, rating, comment);
+      toast.success('Review submitted!');
+      setReviewSession(null);
+      fetchMyGivenReviews();
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit review');
     }
   };
 
@@ -102,6 +124,9 @@ export default function Sessions() {
             const isMentor = session.mentor?._id === user._id;
             const other = isMentor ? session.learner : session.mentor;
             const sessionDate = new Date(session.scheduledAt);
+            const givenReview = myGivenReviews.find(r => 
+              (r.session?._id === session._id) || (r.session === session._id)
+            );
 
             return (
               <div key={session._id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
@@ -194,6 +219,34 @@ export default function Sessions() {
                   )}
                 </div>
 
+                {/* Review Section */}
+                {session.status === 'completed' && (
+                  <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    {givenReview ? (
+                      <div className="flex items-start justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Your Review</p>
+                          {givenReview.comment ? (
+                            <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{givenReview.comment}"</p>
+                          ) : (
+                            <p className="text-sm text-gray-500 dark:text-gray-500 italic">No comment provided</p>
+                          )}
+                        </div>
+                        <div className="flex text-yellow-400">
+                          {'⭐'.repeat(givenReview.rating)}
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setReviewSession(session)}
+                        className="w-full py-3 bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 rounded-xl font-bold hover:bg-primary-100 dark:hover:bg-primary-900/40 transition flex items-center justify-center gap-2"
+                      >
+                        <Star className="w-5 h-5" /> {t('Leave a Review')}
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Shared Notes Section */}
                 {(session.status === 'completed' || session.status === 'accepted') && (
                   <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
@@ -254,6 +307,14 @@ export default function Sessions() {
           })}
         </div>
       )}
+
+      <ReviewModal
+        isOpen={!!reviewSession}
+        onClose={() => setReviewSession(null)}
+        onSubmit={handleReviewSubmit}
+        session={reviewSession}
+        isMentor={reviewSession?.mentor?._id === user._id}
+      />
     </div>
   );
 }

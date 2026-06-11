@@ -104,6 +104,22 @@ export const getReviewsForUser = async (req, res) => {
   }
 };
 
+// @desc    Get reviews given by the current user
+// @route   GET /api/reviews/given
+// @access  Private
+export const getReviewsByMe = async (req, res) => {
+  try {
+    const reviews = await Review.find({ reviewer: req.user.id })
+      .populate('reviewee', 'name avatar')
+      .populate('session', 'scheduledAt')
+      .sort('-createdAt');
+
+    res.json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Helper: Check and award badges
 async function checkAndAwardBadges(user) {
   const badgesToCheck = [];

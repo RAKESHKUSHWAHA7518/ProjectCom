@@ -80,8 +80,29 @@ export const updateSessionStatus = async (req, res) => {
       return res.status(403).json({ message: 'Only mentors can accept sessions' });
     }
 
+    const oldStatus = session.status;
     session.status = status;
     await session.save();
+
+    // If marking as completed for the first time, update user stats
+    if (status === 'completed' && oldStatus !== 'completed') {
+      const mentor = await User.findById(session.mentor);
+      const learner = await User.findById(session.learner);
+
+      if (mentor) {
+        mentor.totalSessionsAsMentor = (mentor.totalSessionsAsMentor || 0) + 1;
+        mentor.skillCredits = (mentor.skillCredits || 0) + (session.creditsExchanged || 1);
+        await mentor.save();
+      }
+
+      if (learner) {
+        learner.totalSessionsAsLearner = (learner.totalSessionsAsLearner || 0) + 1;
+        // Learner loses credit, assuming they already paid or pay now
+        // If the system deducts on booking, don't deduct here.
+        // For now, let's just increment the stats.
+        await learner.save();
+      }
+    }
 
     // Notify other party
     const recipient = session.mentor.toString() === req.user.id ? session.learner : session.mentor;
