@@ -93,11 +93,48 @@ const userSchema = mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    // Auth / account fields
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpiry: {
+      type: Date,
+      default: null,
+    },
+    passwordResetToken: {
+      type: String,
+      default: null,
+    },
+    passwordResetExpiry: {
+      type: Date,
+      default: null,
+    },
+    refreshTokenHash: {
+      type: String,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
   },
   {
     timestamps: true,
   }
 );
+
+
 
 // Hash password before saving
 userSchema.pre('save', async function () {

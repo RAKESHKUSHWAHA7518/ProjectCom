@@ -13,19 +13,46 @@ import { useNotificationStore } from './store/notificationStore'
 import { useThemeStore } from './store/themeStore'
 import { connectSocket, disconnectSocket } from './utils/socket'
 import { useTranslation } from 'react-i18next'
+// Critical-path pages — eager imports
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
-import Explore from './pages/Explore'
-import Profile from './pages/Profile'
-import Sessions from './pages/Sessions'
-import Chat from './pages/Chat'
-import VideoCall from './pages/VideoCall'
-import Leaderboard from './pages/Leaderboard'
-import Community from './pages/Community'
+// All other pages — lazy imports for code splitting
+const Dashboard = React.lazy(() => import('./pages/Dashboard'))
+const Explore = React.lazy(() => import('./pages/Explore'))
+const Profile = React.lazy(() => import('./pages/Profile'))
+const Sessions = React.lazy(() => import('./pages/Sessions'))
+const Chat = React.lazy(() => import('./pages/Chat'))
+const VideoCall = React.lazy(() => import('./pages/VideoCall'))
+const Leaderboard = React.lazy(() => import('./pages/Leaderboard'))
+const Community = React.lazy(() => import('./pages/Community'))
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'))
+const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail'))
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'))
+import AdminRoute from './components/AdminRoute'
 import SearchModal from './components/SearchModal'
 import Avatar from './components/Avatar'
 import './App.css'
+
+// Full-screen loading spinner shown while lazy chunks load
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+}
+
+// Preload module map — mirrors the lazy import paths above
+const preloadMap = {
+  '/dashboard':  () => import('./pages/Dashboard'),
+  '/explore':    () => import('./pages/Explore'),
+  '/profile':    () => import('./pages/Profile'),
+  '/sessions':   () => import('./pages/Sessions'),
+  '/chat':       () => import('./pages/Chat'),
+  '/leaderboard':() => import('./pages/Leaderboard'),
+  '/community':  () => import('./pages/Community'),
+}
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
@@ -392,6 +419,7 @@ function Navbar({ onSearchClick }) {
                     <Link
                       key={link.to}
                       to={link.to}
+                      onMouseEnter={() => preloadMap[link.to]?.()}
                       className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${active
                         ? 'nav-active font-semibold'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -505,6 +533,7 @@ function Navbar({ onSearchClick }) {
                         <Link
                           key={link.to}
                           to={link.to}
+                          onMouseEnter={() => preloadMap[link.to]?.()}
                           onClick={() => setMobileMenuOpen(false)}
                           className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${active
                             ? 'nav-active font-semibold'
@@ -632,22 +661,30 @@ function App() {
         <Navbar onSearchClick={() => setIsSearchOpen(true)} />
         <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
-            <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-            <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
-            <Route path="/sessions" element={user ? <Sessions /> : <Navigate to="/login" />} />
-            <Route path="/chat" element={user ? <Chat /> : <Navigate to="/login" />} />
-            <Route path="/chat/:id" element={user ? <Chat /> : <Navigate to="/login" />} />
-            <Route path="/video/:roomId" element={user ? <VideoCall /> : <Navigate to="/login" />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/community" element={user ? <Community /> : <Navigate to="/login" />} />
-            <Route path="/community/:id" element={user ? <Community /> : <Navigate to="/login" />} />
-          </Routes>
+          <React.Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
+              <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+              <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+              <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+              <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+              <Route path="/sessions" element={user ? <Sessions /> : <Navigate to="/login" />} />
+              <Route path="/chat" element={user ? <Chat /> : <Navigate to="/login" />} />
+              <Route path="/chat/:id" element={user ? <Chat /> : <Navigate to="/login" />} />
+              <Route path="/video/:roomId" element={user ? <VideoCall /> : <Navigate to="/login" />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/community" element={user ? <Community /> : <Navigate to="/login" />} />
+              <Route path="/community/:id" element={user ? <Community /> : <Navigate to="/login" />} />
+              {/* New auth / account routes */}
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              {/* Admin */}
+              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            </Routes>
+          </React.Suspense>
         </main>
       </div>
     </BrowserRouter>

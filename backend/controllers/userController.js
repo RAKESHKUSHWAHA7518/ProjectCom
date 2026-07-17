@@ -6,6 +6,9 @@ import Session from '../models/Session.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Notification from '../models/Notification.js';
+import { optimizeAvatar } from '../utils/imageOptimizer.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
@@ -242,7 +245,7 @@ export const exploreUsers = async (req, res) => {
 // @desc    Upload user avatar
 // @route   POST /api/users/avatar
 // @access  Private
-export const uploadAvatar = async (req, res) => {
+export const uploadAvatar = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -253,14 +256,24 @@ export const uploadAvatar = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Save relative path to avatar
-    const filePath = `/uploads/${req.file.filename}`;
-    user.avatar = filePath;
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    
+    // Extract base name from temp filename (remove .tmp extension)
+    const baseName = path.basename(req.file.filename, '.tmp');
+    const inputPath = req.file.path;
+
+    // Optimize: resize 400x400, convert to WebP
+    const avatarPath = await optimizeAvatar(inputPath, uploadsDir, baseName);
+
+    user.avatar = avatarPath;
     await user.save();
 
-    res.json({ avatar: filePath });
+    res.json({ avatar: avatarPath });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // Pass HTTP 415 / 413 / 422 errors to global error handler
+    next(error);
   }
 };
 

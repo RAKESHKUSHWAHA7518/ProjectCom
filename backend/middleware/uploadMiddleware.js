@@ -1,31 +1,25 @@
 import multer from 'multer';
-import path from 'path';
+
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/');
-  },
+  destination(req, file, cb) { cb(null, 'uploads/'); },
   filename(req, file, cb) {
-    cb(null, `${req.user._id}-${Date.now()}${path.extname(file.originalname)}`);
+    cb(null, `${req.user._id}-${Date.now()}.tmp`);
   },
 });
 
-function checkFileType(file, cb) {
-  const filetypes = /jpg|jpeg|png/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb('Images only!');
-  }
-}
-
 const upload = multer({
   storage,
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      const err = new Error('Unsupported file type. Allowed: JPEG, PNG, WebP, GIF');
+      err.statusCode = 415;
+      cb(err);
+    }
   },
 });
 

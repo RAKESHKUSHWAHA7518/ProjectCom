@@ -14,10 +14,16 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await register(name, email, password);
-    const { user } = useAuthStore.getState();
-    if (user) {
-      navigate('/dashboard');
+    try {
+      const data = await register(name, email, password);
+      if (data && data.message) {
+        import('react-hot-toast').then(module => {
+          module.default.success(data.message);
+        });
+        navigate('/login');
+      }
+    } catch (err) {
+      // Error is handled in the store
     }
   };
 

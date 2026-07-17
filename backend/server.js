@@ -1,33 +1,52 @@
+import './config/env.js';
+
+// --- Env validation FIRST, before anything else ---
+import { validateEnv } from './config/validateEnv.js';
+validateEnv();
+
 import express from 'express';
-import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import http from 'http';
 import { Server } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectDB } from './config/db.js';
-
-dotenv.config();
+import { corsOptions } from './config/corsOptions.js';
+import { helmetOptions } from './config/helmetOptions.js';
+import { globalErrorHandler } from './middleware/errorHandler.js';
+import logger from './utils/logger.js';
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: true,
-  credentials: true
+// ── Security headers (first) ──────────────────────────────────────────────
+app.use(helmet(helmetOptions));
+
+// ── CORS ──────────────────────────────────────────────────────────────────
+app.use(cors(corsOptions));
+
+// ── HTTP request logging ──────────────────────────────────────────────────
+app.use(morgan('combined', {
+  stream: { write: (msg) => logger.info(msg.trim()) },
 }));
-app.use(express.json());
+
+// ── Body parsing & cookies ────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// ── Static uploads ────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
-// Database Connection
+// ── Database ──────────────────────────────────────────────────────────────
 connectDB();
 
-// Routes
+// ── Routes ────────────────────────────────────────────────────────────────
+import healthRoutes from './routes/healthRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import skillRoutes from './routes/skillRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
@@ -40,7 +59,10 @@ import communityRoutes from './routes/communityRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import challengeRoutes from './routes/challengeRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/matches', matchRoutes);
@@ -53,18 +75,24 @@ app.use('/api/communities', communityRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/admin', adminRoutes);
 
-app.get('/', (req, res) => {
-  res.send('SkillSwap API is running...');
-});
+// ── Global error handler (LAST middleware) ─────────────────────────────────
+app.use(globalErrorHandler);
 
+// ── HTTP + Socket.IO ──────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-
 const server = http.createServer(app);
+
+const allowedOriginsList = (process.env.ALLOWED_ORIGINS || '').trim()
+  .split(',').map(o => o.trim()).filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: allowedOriginsList.length > 0 ? allowedOriginsList : true,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -72,9 +100,6 @@ const io = new Server(server, {
 const onlineUsers = new Map();
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
-  // User registers their userId
   socket.on('register-user', (userId) => {
     onlineUsers.set(userId, socket.id);
     io.emit('online-users', Array.from(onlineUsers.keys()));
@@ -84,16 +109,11 @@ io.on('connection', (socket) => {
   socket.on('join-conversation', (conversationId) => {
     socket.join(`chat_${conversationId}`);
   });
-
   socket.on('leave-conversation', (conversationId) => {
     socket.leave(`chat_${conversationId}`);
   });
-
   socket.on('send-message', (data) => {
-    // Broadcast to conversation room
     socket.to(`chat_${data.conversationId}`).emit('new-message', data);
-
-    // Also notify recipient if online
     if (data.recipientId && onlineUsers.has(data.recipientId)) {
       io.to(onlineUsers.get(data.recipientId)).emit('message-notification', {
         conversationId: data.conversationId,
@@ -102,48 +122,34 @@ io.on('connection', (socket) => {
       });
     }
   });
-
   socket.on('typing', (data) => {
     socket.to(`chat_${data.conversationId}`).emit('user-typing', {
       userId: data.userId,
       userName: data.userName,
     });
   });
-
   socket.on('stop-typing', (data) => {
-    socket.to(`chat_${data.conversationId}`).emit('user-stop-typing', {
-      userId: data.userId,
-    });
+    socket.to(`chat_${data.conversationId}`).emit('user-stop-typing', { userId: data.userId });
   });
 
   // --- WEBRTC SIGNALING EVENTS ---
   socket.on('join-room', (roomId, userId) => {
-    console.log(`join-room | socket=${socket.id} user=${userId} room=${roomId}`);
     socket.join(roomId);
     socket.to(roomId).emit('user-connected', userId);
   });
-
   socket.on('leave-room', (roomId, userId) => {
-    console.log(`leave-room | socket=${socket.id} user=${userId} room=${roomId}`);
     socket.leave(roomId);
     socket.to(roomId).emit('user-disconnected', userId);
   });
-
   socket.on('offer', (payload) => {
-    console.log(`offer | from=${socket.id} target=${payload.target}`);
     socket.to(payload.target).emit('offer', payload);
   });
-
   socket.on('answer', (payload) => {
-    console.log(`answer | from=${socket.id} target=${payload.target}`);
     socket.to(payload.target).emit('answer', payload);
   });
-
   socket.on('ice-candidate', (incoming) => {
-    console.log(`ice-candidate | from=${socket.id} target=${incoming.target}`);
     socket.to(incoming.target).emit('ice-candidate', incoming.candidate);
   });
-
   socket.on('video-chat-message', (payload) => {
     socket.to(payload.target).emit('video-chat-message', payload.message);
   });
@@ -156,7 +162,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // Remove from online users
     for (const [userId, socketId] of onlineUsers.entries()) {
       if (socketId === socket.id) {
         onlineUsers.delete(userId);
@@ -164,14 +169,13 @@ io.on('connection', (socket) => {
       }
     }
     io.emit('online-users', Array.from(onlineUsers.keys()));
-    console.log('User disconnected:', socket.id);
   });
 });
 
-// Make io accessible to controllers if needed
 app.set('io', io);
 app.set('onlineUsers', onlineUsers);
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  const mongoHost = (process.env.MONGO_URI || '').replace(/\/\/[^@]+@/, '//<credentials>@');
+  logger.info(`Server running on port ${PORT} | NODE_ENV=${process.env.NODE_ENV || 'development'} | DB=${mongoHost}`);
 });

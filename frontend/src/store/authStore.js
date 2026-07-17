@@ -58,10 +58,11 @@ export const useAuthStore = create((set, get) => ({
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Registration failed');
 
-      localStorage.setItem('user', JSON.stringify(data));
-      set({ user: data, isLoading: false });
+      set({ isLoading: false });
+      return data;
     } catch (error) {
       set({ error: error.message, isLoading: false });
+      throw error;
     }
   },
 
@@ -71,6 +72,17 @@ export const useAuthStore = create((set, get) => ({
         method: 'POST',
         credentials: 'include',
       });
+
+      // Account deactivated — force logout and redirect
+      if (response.status === 403) {
+        const data = await response.json();
+        if (data.message && data.message.toLowerCase().includes('deactivated')) {
+          get().logout();
+          window.location.href = '/login';
+          return null;
+        }
+      }
+
       if (response.ok) {
         const data = await response.json();
         const currentUser = get().user;

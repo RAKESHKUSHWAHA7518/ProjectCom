@@ -37,6 +37,9 @@ const skillSchema = mongoose.Schema(
   }
 );
 
+skillSchema.index({ user: 1, type: 1 });
+skillSchema.index({ name: 'text', category: 'text' });
+
 const Skill = mongoose.model('Skill', skillSchema);
 
 export default Skill;

@@ -39,6 +39,7 @@ const reviewSchema = mongoose.Schema(
 
 // Prevent duplicate reviews: one review per session per reviewer
 reviewSchema.index({ session: 1, reviewer: 1 }, { unique: true });
+reviewSchema.index({ reviewee: 1 });
 
 const Review = mongoose.model('Review', reviewSchema);
 
