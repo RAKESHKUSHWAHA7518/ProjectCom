@@ -1,18 +1,8 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import logger from '../utils/logger.js';
 
-// Create transporter once at module load using environment variables
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: process.env.EMAIL_PORT == 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-});
+// Initialize Resend SDK with your API key
+const resend = new Resend(process.env.EMAIL_PASS);
 
 /**
  * Send an email verification link to the user.
@@ -23,7 +13,7 @@ export async function sendVerificationEmail(user, plainToken) {
   const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${plainToken}`;
 
   try {
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: user.email,
       subject: 'Verify your SkillSwap email',
@@ -83,8 +73,14 @@ export async function sendVerificationEmail(user, plainToken) {
         </html>
       `,
     });
+
+    if (error) {
+      logger.error('Resend API Error (Verification)', { error });
+    } else {
+      logger.info('Verification email sent successfully', { id: data.id });
+    }
   } catch (err) {
-    logger.warn('sendVerificationEmail failed', { email: user.email, error: err.message });
+    logger.error('sendVerificationEmail failed catastrophically', { email: user.email, error: err.message, stack: err.stack });
   }
 }
 
@@ -97,7 +93,7 @@ export async function sendWelcomeEmail(user) {
   const profileUrl = `${frontendUrl}/profile`;
 
   try {
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: user.email,
       subject: 'Welcome to SkillSwap!',
@@ -153,8 +149,12 @@ export async function sendWelcomeEmail(user) {
         </html>
       `,
     });
+
+    if (error) {
+      logger.error('Resend API Error (Welcome)', { error });
+    }
   } catch (err) {
-    logger.warn('sendWelcomeEmail failed', { email: user.email, error: err.message });
+    logger.error('sendWelcomeEmail failed catastrophically', { email: user.email, error: err.message });
   }
 }
 
@@ -167,7 +167,7 @@ export async function sendPasswordResetEmail(user, plainToken) {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${plainToken}`;
 
   try {
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: user.email,
       subject: 'Reset your SkillSwap password',
@@ -227,8 +227,12 @@ export async function sendPasswordResetEmail(user, plainToken) {
         </html>
       `,
     });
+
+    if (error) {
+      logger.error('Resend API Error (Password Reset)', { error });
+    }
   } catch (err) {
-    logger.warn('sendPasswordResetEmail failed', { email: user.email, error: err.message });
+    logger.error('sendPasswordResetEmail failed catastrophically', { email: user.email, error: err.message });
   }
 }
 
@@ -238,7 +242,7 @@ export async function sendPasswordResetEmail(user, plainToken) {
  */
 export async function sendPasswordResetConfirmEmail(user) {
   try {
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: user.email,
       subject: 'Your SkillSwap password has been changed',
@@ -294,7 +298,11 @@ export async function sendPasswordResetConfirmEmail(user) {
         </html>
       `,
     });
+
+    if (error) {
+      logger.error('Resend API Error (Password Reset Confirm)', { error });
+    }
   } catch (err) {
-    logger.warn('sendPasswordResetConfirmEmail failed', { email: user.email, error: err.message });
+    logger.error('sendPasswordResetConfirmEmail failed catastrophically', { email: user.email, error: err.message });
   }
 }
