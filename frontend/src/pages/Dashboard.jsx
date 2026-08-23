@@ -49,13 +49,6 @@ export default function Dashboard() {
     if (user?.token) fetchPersonalStats();
   }, [user]);
 
-  const handleAddSkill = (e) => {
-    e.preventDefault();
-    if (!newSkill.name || !newSkill.category) return;
-    addSkill(newSkill);
-    setNewSkill({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
-  };
-
   const handleOpenBooking = (match) => {
     setSelectedMentor(match.user);
     setSelectedSkillForBooking(match.matchedSkills[0]);

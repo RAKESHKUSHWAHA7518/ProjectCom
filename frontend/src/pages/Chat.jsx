@@ -23,7 +23,6 @@ export default function Chat() {
   } = useChatStore();
 
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState('');
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -92,8 +91,8 @@ export default function Chat() {
       socket.emit('stop-typing', { conversationId, userId: user._id });
       setNewMessage('');
       fetchConversations();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to send message');
     }
   };
 

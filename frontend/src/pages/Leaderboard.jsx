@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
 import { CATEGORIES } from '../data/skillsData';
 import { useTranslation } from 'react-i18next';
 
@@ -8,17 +7,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Leaderboard() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const [leaders, setLeaders] = useState([]);
   const [category, setCategory] = useState('');
   const [type, setType] = useState('mentors');
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, [category, type]);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -28,11 +22,16 @@ export default function Leaderboard() {
       const res = await fetch(`${API_URL}/users/leaderboard?${params.toString()}`);
       const data = await res.json();
       setLeaders(data || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to fetch leaderboard');
     }
     setIsLoading(false);
-  };
+  }, [category, type]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLeaderboard();
+  }, [fetchLeaderboard]);
 
   const getRankStyle = (index) => {
     if (index === 0) return 'bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-lg shadow-yellow-400/30';

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function ReviewModal({ isOpen, onClose, onSubmit, session, isMentor }) {
+  // eslint-disable-next-line no-unused-vars
   const { t } = useTranslation();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
@@ -14,12 +16,14 @@ export default function ReviewModal({ isOpen, onClose, onSubmit, session, isMent
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
       // Reset state on close
       setRating(0);
       setHoverRating(0);
       setComment('');
-    }
-    return () => { document.body.style.overflow = 'unset'; };
+    };
   }, [isOpen]);
 
   if (!isOpen || !session) return null;

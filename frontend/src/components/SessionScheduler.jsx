@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -42,7 +43,7 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
       } else {
         toast.error(data.message || 'Failed to request session');
       }
-    } catch (err) {
+    } catch {
       toast.error('Something went wrong');
     } finally {
       setIsSubmitting(false);

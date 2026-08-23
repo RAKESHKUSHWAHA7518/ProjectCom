@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
@@ -27,11 +27,7 @@ export default function Profile() {
   const [editData, setEditData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [id]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setIsLoading(true);
     try {
       if (isOwnProfile) {
@@ -56,11 +52,16 @@ export default function Profile() {
         setSkills(data.skills || []);
         fetchReviews(id);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to load profile');
     }
     setIsLoading(false);
-  };
+  }, [id, isOwnProfile, currentUser, fetchReviews]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadProfile();
+  }, [loadProfile]);
 
   const handleSave = async () => {
     try {
@@ -77,8 +78,8 @@ export default function Profile() {
         setProfile(data);
         setIsEditing(false);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to save profile');
     }
   };
 
@@ -105,7 +106,7 @@ export default function Profile() {
       } else {
         toast.error(data.message || 'Upload failed');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to upload image');
     }
   };
@@ -115,7 +116,7 @@ export default function Profile() {
       if (!profile || !profile._id) return;
       const conv = await getOrCreateConversation(profile._id);
       navigate(`/chat/${conv._id}`);
-    } catch (err) {
+    } catch {
       alert('Failed to start conversation');
     }
   };
@@ -135,7 +136,7 @@ export default function Profile() {
           const data = await res.json();
           toast.error(data.message || "Failed to delete account");
         }
-      } catch (err) {
+      } catch {
         toast.error("Failed to delete account");
       }
     }
@@ -194,7 +195,7 @@ export default function Profile() {
         const data = await res.json();
         toast.error(data.message || 'Failed to endorse skill');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to endorse skill');
     }
   };

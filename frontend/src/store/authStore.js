@@ -94,7 +94,7 @@ export const useAuthStore = create((set, get) => ({
         }
       }
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   },
@@ -139,7 +139,10 @@ export const useAuthStore = create((set, get) => ({
         method: 'POST',
         credentials: 'include',
       });
-    } catch (e) {}
+      // Ignore logout API errors - still clear local state
+    } catch {
+      // Ignore logout API errors
+    }
     localStorage.removeItem('user');
     set({ user: null });
   },

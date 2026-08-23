@@ -22,7 +22,7 @@ export default function Register() {
         });
         navigate('/login');
       }
-    } catch (err) {
+    } catch {
       // Error is handled in the store
     }
   };

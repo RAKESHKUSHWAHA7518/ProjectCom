@@ -24,8 +24,8 @@ function useAdminFetch(path, deps = []) {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
-    } catch (e) {
-      setError(e.message)
+    } catch (_e) {
+      setError(_e.message)
     } finally {
       setLoading(false)
     }
@@ -90,8 +90,8 @@ function UsersSection() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
-    } catch (e) {
-      setError(e.message)
+    } catch (_e) {
+      setError(_e.message)
     } finally {
       setLoading(false)
     }
@@ -110,8 +110,8 @@ function UsersSection() {
       if (!res.ok) throw new Error('Failed to update status')
       toast.success(`User ${currentActive ? 'deactivated' : 'activated'}`)
       load()
-    } catch (e) {
-      toast.error(e.message)
+    } catch (_e) {
+      toast.error(_e.message)
     }
   }
 
@@ -233,8 +233,8 @@ function ReportsSection() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       setData(await res.json())
-    } catch (e) {
-      setError(e.message)
+    } catch (_e) {
+      setError(_e.message)
     } finally {
       setLoading(false)
     }
@@ -253,8 +253,8 @@ function ReportsSection() {
       if (!res.ok) throw new Error('Failed to update report')
       toast.success(`Report ${status}`)
       load()
-    } catch (e) {
-      toast.error(e.message)
+    } catch (_e) {
+      toast.error(_e.message)
     }
   }
 
@@ -332,6 +332,7 @@ function ReportsSection() {
 }
 
 /* ── Shared UI helpers ─────────────────────────────────────── */
+// eslint-disable-next-line no-unused-vars
 function Section({ title, icon: Icon, children }) {
   return (
     <div className="glass-card rounded-2xl p-6 mb-6">

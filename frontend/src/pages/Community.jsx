@@ -78,8 +78,8 @@ export default function Community() {
       setShowCreateModal(false);
       setNewCommunity({ name: '', description: '', category: '', icon: '💬' });
       toast.success('Community created!');
-    } catch (err) {
-      toast.error(err.message || 'Failed to create community');
+    } catch {
+      toast.error('Failed to create community');
     }
   };
 
@@ -94,8 +94,8 @@ export default function Community() {
       await editPost(id, postId, editingPostContent.trim());
       setEditingPostId(null);
       toast.success('Post updated');
-    } catch (err) {
-      toast.error(err.message || 'Failed to update post');
+    } catch {
+      toast.error('Failed to update post');
     }
   };
   const handleDeletePost = async (postId) => {
@@ -103,8 +103,8 @@ export default function Community() {
     try {
       await deletePost(id, postId);
       toast.success('Post deleted');
-    } catch (err) {
-      toast.error(err.message || 'Failed to delete post');
+    } catch {
+      toast.error('Failed to delete post');
     }
   };
 
@@ -119,8 +119,8 @@ export default function Community() {
       await editReply(id, editingReply.postId, editingReply.replyId, editingReplyContent.trim());
       setEditingReply(null);
       toast.success('Reply updated');
-    } catch (err) {
-      toast.error(err.message || 'Failed to update reply');
+    } catch {
+      toast.error('Failed to update reply');
     }
   };
   const handleDeleteReply = async (postId, replyId) => {
@@ -128,8 +128,8 @@ export default function Community() {
     try {
       await deleteReply(id, postId, replyId);
       toast.success('Reply deleted');
-    } catch (err) {
-      toast.error(err.message || 'Failed to delete reply');
+    } catch {
+      toast.error('Failed to delete reply');
     }
   };
 
@@ -137,8 +137,8 @@ export default function Community() {
     try {
       await pinPost(id, postId);
       toast.success('Post pinned');
-    } catch (err) {
-      toast.error(err.message || 'Failed to pin post');
+    } catch {
+      toast.error('Failed to pin post');
     }
   };
 
@@ -146,8 +146,8 @@ export default function Community() {
     try {
       await unpinPost(id, postId);
       toast.success('Post unpinned');
-    } catch (err) {
-      toast.error(err.message || 'Failed to unpin post');
+    } catch {
+      toast.error('Failed to unpin post');
     }
   };
 

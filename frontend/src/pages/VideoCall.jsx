@@ -42,6 +42,47 @@ export default function VideoCall() {
     ],
   };
 
+  // WebRTC peer connection setup - defined before useEffect to avoid temporal dead zone
+  const createPeerConnection = async (socket) => {
+    const pc = new RTCPeerConnection(ICE_SERVERS);
+    peerConnectionRef.current = pc;
+
+    // Add local tracks
+    localStreamRef.current.getTracks().forEach((track) => {
+      pc.addTrack(track, localStreamRef.current);
+    });
+
+    // When we receive remote tracks
+    pc.ontrack = (event) => {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = event.streams[0];
+        setIsConnected(true);
+        setCallStatus('Connected');
+      }
+    };
+
+    // ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('ice-candidate', {
+          target: roomId,
+          candidate: event.candidate,
+        });
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log('Connection state change:', pc.connectionState);
+      if (pc.connectionState === 'connected') {
+        setIsConnected(true);
+        setCallStatus('Connected');
+      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        setIsConnected(false);
+        setCallStatus('Connection lost');
+      }
+    };
+  };
+
   useEffect(() => {
     if (!roomId) return;
 
@@ -102,7 +143,7 @@ export default function VideoCall() {
           console.log('Peer connected:', userId);
           setCallStatus('Peer connected. Setting up call...');
 
-          await createPeerConnection(socket, userId);
+          await createPeerConnection(socket);
 
           // We are the caller
           const pc = peerConnectionRef.current;
@@ -123,7 +164,7 @@ export default function VideoCall() {
           setCallStatus('Offer received. Connecting...');
 
           if (!peerConnectionRef.current) {
-            await createPeerConnection(socket, data.caller);
+            await createPeerConnection(socket);
           }
           const pc = peerConnectionRef.current;
 
@@ -213,8 +254,8 @@ export default function VideoCall() {
         socket.emit('join-room', roomId, user._id);
         setCallStatus('Waiting for other participant...');
 
-      } catch (err) {
-        console.error('Failed to start call completely:', err);
+      } catch {
+        console.error('Failed to start call completely');
         if (isMounted) {
           setCallStatus('Failed to start call');
         }
@@ -250,6 +291,7 @@ export default function VideoCall() {
   }, [messages]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isChatOpen) setUnreadCount(0);
   }, [isChatOpen]);
 
@@ -277,46 +319,6 @@ export default function VideoCall() {
     const interval = setInterval(() => setCallDuration((d) => d + 1), 1000);
     return () => clearInterval(interval);
   }, [isConnected]);
-
-  const createPeerConnection = async (socket, targetId) => {
-    const pc = new RTCPeerConnection(ICE_SERVERS);
-    peerConnectionRef.current = pc;
-
-    // Add local tracks
-    localStreamRef.current.getTracks().forEach((track) => {
-      pc.addTrack(track, localStreamRef.current);
-    });
-
-    // When we receive remote tracks
-    pc.ontrack = (event) => {
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-        setIsConnected(true);
-        setCallStatus('Connected');
-      }
-    };
-
-    // ICE candidates
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('ice-candidate', {
-          target: roomId,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    pc.onconnectionstatechange = () => {
-      console.log('Connection state change:', pc.connectionState);
-      if (pc.connectionState === 'connected') {
-        setIsConnected(true);
-        setCallStatus('Connected');
-      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        setIsConnected(false);
-        setCallStatus('Connection lost');
-      }
-    };
-  };
 
   const toggleMute = () => {
     const audioTrack = localStreamRef.current?.getAudioTracks()[0];

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useSkillStore } from '../store/skillStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatStore';
@@ -49,14 +48,15 @@ export default function Explore() {
         setResults(data.users || []);
         setTotalPages(data.totalPages || 1);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to fetch explore data');
     }
     setIsLoading(false);
   };
 
   useEffect(() => {
     if (user) fetchExplore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, sortBy, category]);
 
   const handleSearch = (e) => {
@@ -69,7 +69,7 @@ export default function Explore() {
     try {
       const conv = await getOrCreateConversation(mentorId);
       navigate(`/chat/${conv._id}`);
-    } catch (err) {
+    } catch {
       toast.error('Failed to start conversation');
     }
   };
