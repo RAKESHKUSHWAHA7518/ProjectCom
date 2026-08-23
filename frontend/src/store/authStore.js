@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useVerificationStore } from './verificationStore';
 
 // Note: In an actual app these endpoints point to localhost:5000/api or similar
 const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth`;
@@ -147,3 +148,8 @@ export const useAuthStore = create((set, get) => ({
     set({ user: null });
   },
 }));
+
+// Set the auth token getter for verification store
+useVerificationStore.setState({
+  getAuthToken: () => useAuthStore.getState().user?.token || '',
+});

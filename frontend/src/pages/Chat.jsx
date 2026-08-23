@@ -120,9 +120,12 @@ export default function Chat() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+            <div className="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
               <div className="text-4xl mb-2">💬</div>
-              <p className="text-sm">{t('No conversations yet')}</p>
+              <p className="text-sm mb-4">{t('No conversations yet')}</p>
+              <Link to="/explore" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2">
+                <Search className="w-4 h-4" /> Find Someone to Message
+              </Link>
             </div>
           ) : (
             conversations.map((conv) => {

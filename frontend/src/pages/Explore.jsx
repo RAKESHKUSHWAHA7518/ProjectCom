@@ -210,7 +210,21 @@ export default function Explore() {
         <div className="py-20 text-center flex flex-col items-center">
           <Search className="w-16 h-16 mb-4 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
           <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No mentors found')}</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Try adjusting filters')}</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">{t('Try adjusting filters')}</p>
+          <div className="space-y-3 w-full max-w-md">
+            <button
+              onClick={() => { setSearch(''); setCategory(''); setSelectedSkill(''); setMinRating(''); setSortBy(''); setPage(1); fetchExplore(); }}
+              className="w-full py-3 px-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition flex items-center justify-center gap-2"
+            >
+              <Search className="w-5 h-5" /> Clear All Filters
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-3 px-4 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 transition flex items-center justify-center gap-2"
+            >
+              <Sparkles className="w-5 h-5" /> Add Skills You Want to Learn
+            </button>
+          </div>
         </div>
       ) : (
         <>

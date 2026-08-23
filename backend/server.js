@@ -17,6 +17,8 @@ import { connectDB } from './config/db.js';
 import { corsOptions } from './config/corsOptions.js';
 import { helmetOptions } from './config/helmetOptions.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
+import { apiLimiter, authLimiter, searchLimiter, uploadLimiter, sessionLimiter, messageLimiter } from './middleware/rateLimiter.js';
+import { sanitizeMiddleware } from './middleware/sanitize.js';
 import logger from './utils/logger.js';
 
 const app = express();
@@ -37,6 +39,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// ── Input Sanitization (XSS prevention) ──────────────────────────────────────
+// Apply to all API routes - sanitizes body, query, params
+app.use('/api/', sanitizeMiddleware({
+  htmlFields: ['bio', 'description', 'content', 'notes', 'comment', 'replyContent'],
+  textFields: ['name', 'email', 'location', 'timezone', 'title', 'skill', 'category', 'search', 'query'],
+}));
+
 // ── Static uploads ────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +53,9 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // ── Database ──────────────────────────────────────────────────────────────
 connectDB();
+
+// ── Rate Limiting (after body parsing) ───────────────────────────────────────
+app.use('/api/', apiLimiter); // General API rate limit
 
 // ── Routes ────────────────────────────────────────────────────────────────
 import healthRoutes from './routes/healthRoutes.js';
@@ -61,22 +73,27 @@ import searchRoutes from './routes/searchRoutes.js';
 import challengeRoutes from './routes/challengeRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import verificationRoutes from './routes/verificationRoutes.js';
 
 app.use('/api/health', healthRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes); // Stricter auth rate limit
 app.use('/api/skills', skillRoutes);
 app.use('/api/matches', matchRoutes);
-app.use('/api/sessions', sessionRoutes);
+app.use('/api/sessions', sessionLimiter, sessionRoutes); // Session booking limit
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/chat', chatRoutes);
+app.use('/api/chat', messageLimiter, chatRoutes); // Message rate limit
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/stats', statsRoutes);
-app.use('/api/search', searchRoutes);
+app.use('/api/search', searchLimiter, searchRoutes); // Search rate limit
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/verification', verificationRoutes);
+
+// Specific upload limiter for avatar uploads (if separate route exists)
+// app.use('/api/users/avatar', uploadLimiter);
 
 // ── Global error handler (LAST middleware) ─────────────────────────────────
 app.use(globalErrorHandler);

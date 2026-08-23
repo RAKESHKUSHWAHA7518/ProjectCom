@@ -94,6 +94,24 @@ const userSchema = mongoose.Schema(
       default: [],
     },
 
+    // Verification fields
+    verification: {
+      email: { type: Boolean, default: false },
+      phone: { type: Boolean, default: false },
+      linkedin: { type: Boolean, default: false },
+      identity: { type: Boolean, default: false },
+      videoIntro: { type: Boolean, default: false },
+    },
+    verificationRequests: [{
+      type: { type: String, enum: ['phone', 'linkedin', 'identity', 'videoIntro'] },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      submittedAt: { type: Date, default: Date.now },
+      reviewedAt: { type: Date },
+      reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      notes: { type: String },
+      data: { type: mongoose.Schema.Types.Mixed },
+    }],
+
     // Auth / account fields
     emailVerified: {
       type: Boolean,

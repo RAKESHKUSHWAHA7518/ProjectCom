@@ -104,10 +104,13 @@ export default function Leaderboard() {
           <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
         </div>
       ) : leaders.length === 0 ? (
-        <div className="py-20 text-center">
+        <div className="py-20 text-center flex flex-col items-center">
           <div className="text-6xl mb-4">🏅</div>
           <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No leaders yet')}</h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Complete sessions to appear')}</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">{t('Complete sessions to appear')}</p>
+          <Link to="/explore" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2">
+            <Search className="w-4 h-4" /> Find a Mentor
+          </Link>
         </div>
       ) : (
         <div className="max-w-3xl mx-auto space-y-3">

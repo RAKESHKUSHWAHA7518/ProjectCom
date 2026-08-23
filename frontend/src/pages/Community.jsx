@@ -173,10 +173,16 @@ export default function Community() {
             <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : communities.length === 0 ? (
-          <div className="py-20 text-center">
+          <div className="py-20 text-center flex flex-col items-center">
             <div className="text-6xl mb-4">🌐</div>
             <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No communities yet')}</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Be the first to create')}</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">{t('Be the first to create')}</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" /> Create Community
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -341,9 +347,15 @@ export default function Community() {
       {/* Posts */}
       <div className="space-y-4">
         {(!activeCommunity.posts || activeCommunity.posts.length === 0) ? (
-          <div className="py-12 text-center text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+          <div className="py-12 text-center text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center">
             <div className="text-4xl mb-2">📝</div>
-            <p>{t('No posts yet')}</p>
+            <p className="mb-4">{t('No posts yet')}</p>
+            <button
+              onClick={() => setNewPostContent('')}
+              className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" /> Create First Post
+            </button>
           </div>
         ) : (
           sortedPosts.map((post) => {

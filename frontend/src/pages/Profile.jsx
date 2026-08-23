@@ -6,6 +6,7 @@ import { useChatStore } from '../store/chatStore';
 import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2, Zap, Mail, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
+import VerificationPanel from '../components/VerificationPanel';
 import { useTranslation } from 'react-i18next';
 
 const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
@@ -477,6 +478,11 @@ export default function Profile() {
           <p className="text-center text-gray-400 dark:text-gray-500 py-8">{t('No reviews yet')}</p>
         )}
       </div>
+
+      {/* Verification Panel */}
+      {isOwnProfile && (
+        <VerificationPanel user={profile} isOwnProfile={true} />
+      )}
 
       {/* Danger Zone */}
       {isOwnProfile && (

@@ -1,0 +1,87 @@
+{
+  "name": "SkillSwap - Exchange Skills, Grow Together",
+  "short_name": "SkillSwap",
+  "description": "A peer-to-peer ecosystem where you teach what you know and learn what you don't. Connect with mentors globally, earn credits, and level up your skills!",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["education", "productivity", "social"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Explore Mentors",
+      "short_name": "Explore",
+      "description": "Find mentors to learn from",
+      "url": "/explore",
+      "icons": [{ "src": "/icons/search.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My Sessions",
+      "short_name": "Sessions",
+      "description": "View your upcoming sessions",
+      "url": "/sessions",
+      "icons": [{ "src": "/icons/calendar.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Chat",
+      "description": "Chat with mentors and learners",
+      "url": "/chat",
+      "icons": [{ "src": "/icons/chat.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}
