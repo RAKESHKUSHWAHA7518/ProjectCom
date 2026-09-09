@@ -28,8 +28,8 @@ export const useThemeStore = create((set) => ({
             body: JSON.stringify({ theme: next }),
           });
         }
-      } catch (e) {
-        console.error('Failed to sync theme', e);
+      } catch {
+        console.error('Failed to sync theme');
       }
     }
   },
@@ -51,7 +51,9 @@ export const useThemeStore = create((set) => ({
         if (user && user.settings && user.settings.theme) {
           dbTheme = user.settings.theme;
         }
-      } catch (e) {}
+      } catch {
+      // Ignore parse errors
+    }
     }
 
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

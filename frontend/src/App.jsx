@@ -32,6 +32,10 @@ const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'))
 import AdminRoute from './components/AdminRoute'
 import SearchModal from './components/SearchModal'
 import Avatar from './components/Avatar'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import SkipLink from './components/SkipLink'
+import EmailVerificationBanner from './components/EmailVerificationBanner'
+import TimezoneBanner from './components/TimezoneBanner'
 import './App.css'
 
 // Full-screen loading spinner shown while lazy chunks load
@@ -253,12 +257,27 @@ function NotificationBell() {
     return () => clearInterval(interval)
   }, [])
 
+  // Keyboard navigation - close on Escape
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen])
+
   return (
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200"
+        className="relative p-2.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
         aria-label="Notifications"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-controls="notification-panel"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
@@ -269,20 +288,23 @@ function NotificationBell() {
       <AnimatePresence>
         {isOpen && (
           <>
-            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
             <motion.div
               variants={scaleIn}
               initial="hidden"
               animate="visible"
               exit="exit"
+              id="notification-panel"
+              role="dialog"
+              aria-labelledby="notification-title"
               className="absolute right-0 top-full mt-3 w-[340px] glass-card rounded-2xl shadow-float z-50 overflow-hidden origin-top-right"
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-                <h3 className="font-bold text-gray-900 dark:text-white text-sm">Notifications</h3>
+                <h3 id="notification-title" className="font-bold text-gray-900 dark:text-white text-sm">Notifications</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition"
+                    className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                   >
                     Mark all read
                   </button>
@@ -379,21 +401,35 @@ function Navbar({ onSearchClick }) {
   const { t } = useTranslation()
   const { user, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [completedCount, setCompletedCount] = useState(0)
   const location = useLocation()
+
+  useEffect(() => {
+    if (user?.token) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions?status=completed`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      }).then(r => r.json()).then(data => setCompletedCount(data.length || 0)).catch(() => {});
+    }
+  }, [user])
 
   const handleLogout = () => {
     disconnectSocket()
     logout()
   }
 
-  const navLinks = [
+  const baseNavLinks = [
     { to: '/explore', label: t('Explore'), icon: Search },
     { to: '/dashboard', label: t('Dashboard'), icon: LayoutDashboard },
     { to: '/sessions', label: t('Sessions'), icon: CalendarDays },
     { to: '/chat', label: t('Chat'), icon: MessageCircle },
+  ]
+
+  const advancedNavLinks = completedCount > 0 ? [
     { to: '/leaderboard', label: t('Rankings'), icon: Trophy },
     { to: '/community', label: t('Community'), icon: Globe },
-  ]
+  ] : []
+
+  const navLinks = [...baseNavLinks, ...advancedNavLinks]
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
 
@@ -654,40 +690,45 @@ function App() {
   }, [])
 
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
-        <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
-        <SocketManager />
-        <Navbar onSearchClick={() => setIsSearchOpen(true)} />
-        <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <React.Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
-              <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-              <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
-              <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
-              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-              <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
-              <Route path="/sessions" element={user ? <Sessions /> : <Navigate to="/login" />} />
-              <Route path="/chat" element={user ? <Chat /> : <Navigate to="/login" />} />
-              <Route path="/chat/:id" element={user ? <Chat /> : <Navigate to="/login" />} />
-              <Route path="/video/:roomId" element={user ? <VideoCall /> : <Navigate to="/login" />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/community" element={user ? <Community /> : <Navigate to="/login" />} />
-              <Route path="/community/:id" element={user ? <Community /> : <Navigate to="/login" />} />
-              {/* New auth / account routes */}
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              {/* Admin */}
-              <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-            </Routes>
-          </React.Suspense>
-        </main>
-      </div>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
+          <SkipLink />
+          <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
+          <SocketManager />
+          <EmailVerificationBanner />
+          <TimezoneBanner />
+          <Navbar onSearchClick={() => setIsSearchOpen(true)} />
+          <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+          <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="main">
+            <React.Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
+                <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+                <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+                <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/login" />} />
+                <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+                <Route path="/profile/:id" element={user ? <Profile /> : <Navigate to="/login" />} />
+                <Route path="/sessions" element={user ? <Sessions /> : <Navigate to="/login" />} />
+                <Route path="/chat" element={user ? <Chat /> : <Navigate to="/login" />} />
+                <Route path="/chat/:id" element={user ? <Chat /> : <Navigate to="/login" />} />
+                <Route path="/video/:roomId" element={user ? <VideoCall /> : <Navigate to="/login" />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/community" element={user ? <Community /> : <Navigate to="/login" />} />
+                <Route path="/community/:id" element={user ? <Community /> : <Navigate to="/login" />} />
+                {/* New auth / account routes */}
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                {/* Admin */}
+                <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              </Routes>
+            </React.Suspense>
+          </main>
+        </div>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

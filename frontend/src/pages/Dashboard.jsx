@@ -5,7 +5,7 @@ import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import toast from 'react-hot-toast';
-import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2 } from 'lucide-react';
+import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2, Sparkles } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import OnboardingTour from '../components/OnboardingTour';
@@ -48,13 +48,6 @@ export default function Dashboard() {
     };
     if (user?.token) fetchPersonalStats();
   }, [user]);
-
-  const handleAddSkill = (e) => {
-    e.preventDefault();
-    if (!newSkill.name || !newSkill.category) return;
-    addSkill(newSkill);
-    setNewSkill({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
-  };
 
   const handleOpenBooking = (match) => {
     setSelectedMentor(match.user);
@@ -291,7 +284,10 @@ export default function Dashboard() {
             {recentSessions.length === 0 ? (
               <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500 flex flex-col items-center">
                 <Calendar className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                <p className="text-sm">No sessions yet. Find mentors on the Explore page!</p>
+                <p className="text-sm mb-4">No sessions yet. Find mentors on the Explore page!</p>
+                <Link to="/explore" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2">
+                  <Search className="w-4 h-4" /> Explore Mentors
+                </Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -343,7 +339,10 @@ export default function Dashboard() {
               {matches.length === 0 ? (
                 <div className="p-6 text-center bg-gray-50 dark:bg-gray-800 rounded-xl text-gray-400 dark:text-gray-500 flex flex-col items-center">
                   <Search className="w-10 h-10 mb-2 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                  <p className="text-sm">No mentors found. Add skills you want to learn!</p>
+                  <p className="text-sm mb-4">No mentors found. Add skills you want to learn!</p>
+                  <Link to="/dashboard#skills" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Add Learning Skills
+                  </Link>
                 </div>
               ) : (
                 matches.slice(0, 3).map((match) => (

@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useCommunityStore } from '../store/communityStore';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
+import { Users, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Community() {
@@ -78,8 +79,8 @@ export default function Community() {
       setShowCreateModal(false);
       setNewCommunity({ name: '', description: '', category: '', icon: '💬' });
       toast.success('Community created!');
-    } catch (err) {
-      toast.error(err.message || 'Failed to create community');
+    } catch {
+      toast.error('Failed to create community');
     }
   };
 
@@ -94,8 +95,8 @@ export default function Community() {
       await editPost(id, postId, editingPostContent.trim());
       setEditingPostId(null);
       toast.success('Post updated');
-    } catch (err) {
-      toast.error(err.message || 'Failed to update post');
+    } catch {
+      toast.error('Failed to update post');
     }
   };
   const handleDeletePost = async (postId) => {
@@ -103,8 +104,8 @@ export default function Community() {
     try {
       await deletePost(id, postId);
       toast.success('Post deleted');
-    } catch (err) {
-      toast.error(err.message || 'Failed to delete post');
+    } catch {
+      toast.error('Failed to delete post');
     }
   };
 
@@ -119,8 +120,8 @@ export default function Community() {
       await editReply(id, editingReply.postId, editingReply.replyId, editingReplyContent.trim());
       setEditingReply(null);
       toast.success('Reply updated');
-    } catch (err) {
-      toast.error(err.message || 'Failed to update reply');
+    } catch {
+      toast.error('Failed to update reply');
     }
   };
   const handleDeleteReply = async (postId, replyId) => {
@@ -128,8 +129,8 @@ export default function Community() {
     try {
       await deleteReply(id, postId, replyId);
       toast.success('Reply deleted');
-    } catch (err) {
-      toast.error(err.message || 'Failed to delete reply');
+    } catch {
+      toast.error('Failed to delete reply');
     }
   };
 
@@ -137,8 +138,8 @@ export default function Community() {
     try {
       await pinPost(id, postId);
       toast.success('Post pinned');
-    } catch (err) {
-      toast.error(err.message || 'Failed to pin post');
+    } catch {
+      toast.error('Failed to pin post');
     }
   };
 
@@ -146,8 +147,8 @@ export default function Community() {
     try {
       await unpinPost(id, postId);
       toast.success('Post unpinned');
-    } catch (err) {
-      toast.error(err.message || 'Failed to unpin post');
+    } catch {
+      toast.error('Failed to unpin post');
     }
   };
 
@@ -173,10 +174,16 @@ export default function Community() {
             <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
           </div>
         ) : communities.length === 0 ? (
-          <div className="py-20 text-center">
+          <div className="py-20 text-center flex flex-col items-center">
             <div className="text-6xl mb-4">🌐</div>
             <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300">{t('No communities yet')}</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">{t('Be the first to create')}</p>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 mb-6">{t('Be the first to create')}</p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="px-6 py-3 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" /> Create Community
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -341,9 +348,15 @@ export default function Community() {
       {/* Posts */}
       <div className="space-y-4">
         {(!activeCommunity.posts || activeCommunity.posts.length === 0) ? (
-          <div className="py-12 text-center text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+          <div className="py-12 text-center text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center">
             <div className="text-4xl mb-2">📝</div>
-            <p>{t('No posts yet')}</p>
+            <p className="mb-4">{t('No posts yet')}</p>
+            <button
+              onClick={() => setNewPostContent('')}
+              className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2"
+            >
+              <Send className="w-4 h-4" /> Create First Post
+            </button>
           </div>
         ) : (
           sortedPosts.map((post) => {

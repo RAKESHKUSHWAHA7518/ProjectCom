@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { connectSocket, getSocket } from '../utils/socket';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Chat() {
@@ -23,7 +23,6 @@ export default function Chat() {
   } = useChatStore();
 
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [typingUser, setTypingUser] = useState('');
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -92,8 +91,8 @@ export default function Chat() {
       socket.emit('stop-typing', { conversationId, userId: user._id });
       setNewMessage('');
       fetchConversations();
-    } catch (err) {
-      console.error(err);
+    } catch {
+      console.error('Failed to send message');
     }
   };
 
@@ -121,9 +120,12 @@ export default function Chat() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+            <div className="p-8 text-center text-gray-400 dark:text-gray-500 flex flex-col items-center">
               <div className="text-4xl mb-2">💬</div>
-              <p className="text-sm">{t('No conversations yet')}</p>
+              <p className="text-sm mb-4">{t('No conversations yet')}</p>
+              <Link to="/explore" className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition flex items-center gap-2">
+                <Search className="w-4 h-4" /> Find Someone to Message
+              </Link>
             </div>
           ) : (
             conversations.map((conv) => {

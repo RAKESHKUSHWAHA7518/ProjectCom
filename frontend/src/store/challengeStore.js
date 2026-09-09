@@ -3,7 +3,7 @@ import { useAuthStore } from './authStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export const useChallengeStore = create((set, get) => ({
+export const useChallengeStore = create((set) => ({
   challenges: [],
   weekKey: '',
   isLoading: false,

@@ -35,7 +35,7 @@ export default function Sessions() {
           setReviewSession(completedSession);
         }
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to update status');
     }
   };
@@ -46,8 +46,8 @@ export default function Sessions() {
       toast.success('Review submitted!');
       setReviewSession(null);
       fetchMyGivenReviews();
-    } catch (err) {
-      toast.error(err.message || 'Failed to submit review');
+    } catch {
+      toast.error('Failed to submit review');
     }
   };
 
@@ -58,7 +58,7 @@ export default function Sessions() {
       toast.success('Note added');
       setNoteContent('');
       setActiveNoteSession(null);
-    } catch (err) {
+    } catch {
       toast.error('Failed to add note');
     }
   };

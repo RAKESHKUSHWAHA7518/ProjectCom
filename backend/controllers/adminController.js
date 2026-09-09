@@ -41,7 +41,7 @@ export const updateUserStatus = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { isActive },
-      { new: true, select: 'name email role isActive emailVerified createdAt' }
+      { returnDocument: 'after', select: 'name email role isActive emailVerified createdAt' }
     );
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
@@ -100,7 +100,7 @@ export const updateReport = async (req, res) => {
     const report = await Report.findByIdAndUpdate(
       req.params.id,
       { status, resolvedBy: req.user._id, resolvedAt: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!report) return res.status(404).json({ error: 'Report not found' });
     res.json(report);

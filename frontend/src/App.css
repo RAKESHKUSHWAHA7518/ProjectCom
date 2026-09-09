@@ -1,1 +1,195 @@
-/* Intentionally empty. Using Tailwind for styles. */
+/* Accessibility & Global Focus Styles */
+
+/* Focus visible - better keyboard navigation */
+:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Remove outline for mouse users but keep for keyboard */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen reader only - for skip links and live regions */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Live region for announcements */
+[role="status"][aria-live] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-text: #000;
+    --color-background: #fff;
+  }
+
+  .dark {
+    --color-primary: #60a5fa;
+    --color-primary-hover: #93c5fd;
+    --color-text: #fff;
+    --color-background: #000;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus styles for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+/* Dark mode focus ring offset */
+.dark button:focus-visible,
+.dark a:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible,
+.dark textarea:focus-visible,
+.dark [tabindex]:focus-visible {
+  outline-color: #818cf8;
+  outline-offset: 2px;
+}
+
+/* Skip link styles */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.5rem;
+  background-color: #4f46e5;
+  color: white;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  z-index: 100;
+  transition: top 0.2s ease-in-out;
+}
+
+.skip-link:focus {
+  top: 1rem;
+  outline: none;
+  box-shadow: 0 0 0 2px #818cf8, 0 0 0 4px #1f2937;
+}
+
+/* Form error message */
+.form-error {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #dc2626;
+}
+.dark .form-error {
+  color: #f87171;
+}
+
+/* Required field indicator */
+.required-indicator {
+  color: #ef4444;
+}
+
+/* Disabled state */
+.disabled,
+[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* High contrast focus for cards and interactive containers */
+.card:focus-within,
+.interactive-card:focus-within {
+  box-shadow: 0 0 0 2px #4f46e5, 0 0 0 4px #fff;
+}
+.dark .card:focus-within,
+.dark .interactive-card:focus-within {
+  box-shadow: 0 0 0 2px #818cf8, 0 0 0 4px #1f2937;
+}
+
+/* Toast accessibility */
+[role="alert"] {
+  animation: fadeInSlideIn 0.3s ease-out;
+}
+
+@keyframes fadeInSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal focus trap */
+.modal-open {
+  overflow: hidden;
+}
+
+.modal-overlay:focus {
+  outline: none;
+}
+
+/* Loading state accessibility */
+[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* Image alt text reminder */
+img:not([alt]) {
+  outline: 2px solid #ef4444;
+}
+
+/* Heading hierarchy check */
+h1 + h3,
+h2 + h4,
+h3 + h5,
+h4 + h6 {
+  outline: 2px solid #f59e0b;
+}
+
+/* Better color contrast for muted text in light mode */
+@media (prefers-color-scheme: light) {
+  .text-gray-400 {
+    color: #4b5563 !important;
+  }
+}
+.dark .text-gray-500 {
+  color: #9ca3af !important;
+}

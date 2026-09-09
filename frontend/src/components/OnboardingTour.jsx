@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Joyride, STATUS } from 'react-joyride';
 import { useAuthStore } from '../store/authStore';
 
@@ -6,27 +6,81 @@ export default function OnboardingTour() {
   const { user } = useAuthStore();
   const [run, setRun] = useState(false);
 
-  useEffect(() => {
-    // Only run tour if user is logged in and hasn't completed it
-    if (user) {
-      const hasCompletedTour = localStorage.getItem(`tourCompleted_${user._id}`);
-      if (!hasCompletedTour) {
-        // Small delay to ensure components are mounted
-        const timer = setTimeout(() => {
-          setRun(true);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
+  const markTourComplete = useCallback(() => {
+    setRun(false);
+    if (!user) return;
+    const userId = user._id || user.id;
+    if (userId) {
+      localStorage.setItem(`tourCompleted_${userId}`, 'true');
+    }
+    // Also persist to backend so it never shows again across any browser/device
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    if (user.token) {
+      fetch(`${API_URL}/users/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ hasSeenTour: true }),
+      }).catch(() => {});
+    }
+    // Update local user state in auth store
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser) {
+      const updated = { ...currentUser, hasSeenTour: true };
+      localStorage.setItem('user', JSON.stringify(updated));
+      useAuthStore.setState({ user: updated });
     }
   }, [user]);
 
-  const handleJoyrideCallback = (data) => {
-    const { status } = data;
-    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED];
+  useEffect(() => {
+    // Only run tour if user is logged in
+    if (!user) return;
 
-    if (finishedStatuses.includes(status)) {
-      setRun(false);
-      localStorage.setItem(`tourCompleted_${user._id}`, 'true');
+    const userId = user._id || user.id;
+    const tourKey = `tourCompleted_${userId}`;
+    const hasCompletedLocal = localStorage.getItem(tourKey) === 'true';
+
+    // Check if user is an existing user or has already seen the tour:
+    // 1. Explicitly has seen tour (DB or localStorage)
+    // 2. Already has a completed profile
+    // 3. Has existing sessions (mentor or learner)
+    const isReturningUser =
+      user.hasSeenTour === true ||
+      hasCompletedLocal ||
+      user.profileComplete === true ||
+      (user.totalSessionsAsMentor > 0) ||
+      (user.totalSessionsAsLearner > 0);
+
+    if (isReturningUser) {
+      // Ensure local storage is also flagged so we never check again
+      if (userId && !hasCompletedLocal) {
+        localStorage.setItem(tourKey, 'true');
+      }
+      return;
+    }
+
+    // Only run for brand-new users logging in for the first time
+    const timer = setTimeout(() => {
+      setRun(true);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const handleJoyrideCallback = (data) => {
+    const { status, action, type } = data;
+    const finishedStatuses = [STATUS.FINISHED, STATUS.SKIPPED, 'finished', 'skipped'];
+
+    // Permanently complete on any exit event: finish, skip, clicking 'X' close, or tour ending
+    if (
+      finishedStatuses.includes(status) ||
+      action === 'close' ||
+      action === 'skip' ||
+      type === 'tour:end'
+    ) {
+      markTourComplete();
     }
   };
 

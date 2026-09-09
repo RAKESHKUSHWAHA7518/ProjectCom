@@ -10,16 +10,29 @@ export const useNotificationStore = create((set) => ({
 
   fetchNotifications: async () => {
     try {
-      const { user } = useAuthStore.getState();
-      if (!user) return;
-      const response = await fetch(`${API_URL}/notifications`, {
+      const { user, refreshAccessToken, logout } = useAuthStore.getState();
+      if (!user?.token) return;
+      let response = await fetch(`${API_URL}/notifications`, {
         headers: { Authorization: `Bearer ${user.token}` },
       });
+
+      if (response.status === 401) {
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          response = await fetch(`${API_URL}/notifications`, {
+            headers: { Authorization: `Bearer ${newToken}` },
+          });
+        } else {
+          logout();
+          return;
+        }
+      }
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      set({ notifications: data.notifications, unreadCount: data.unreadCount });
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch notifications');
+      set({ notifications: data.notifications || [], unreadCount: data.unreadCount || 0 });
     } catch (error) {
-      console.error('Failed to fetch notifications:', error);
+      console.warn('Failed to fetch notifications:', error.message);
     }
   },
 

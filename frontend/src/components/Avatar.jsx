@@ -3,11 +3,11 @@ import { User } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export const getAvatarUrl = (path) => {
+function getAvatarUrl(path) {
   if (!path) return null;
   if (path.startsWith('http')) return path;
   return `${API_URL.replace('/api', '')}${path}`;
-};
+}
 
 export default function Avatar({ src, name, size = 'md', className = '' }) {
   const url = getAvatarUrl(src);
