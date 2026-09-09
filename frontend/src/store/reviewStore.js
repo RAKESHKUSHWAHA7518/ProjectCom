@@ -43,10 +43,10 @@ export const useReviewStore = create((set) => ({
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      set({ reviews: data, isLoading: false });
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch reviews');
+      set({ reviews: Array.isArray(data) ? data : [], isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ reviews: [], error: error.message, isLoading: false });
     }
   },
 
@@ -58,10 +58,10 @@ export const useReviewStore = create((set) => ({
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      set({ myGivenReviews: data, isLoading: false });
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch given reviews');
+      set({ myGivenReviews: Array.isArray(data) ? data : [], isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ myGivenReviews: [], error: error.message, isLoading: false });
     }
   },
 }));

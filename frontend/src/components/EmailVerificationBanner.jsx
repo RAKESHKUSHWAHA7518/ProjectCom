@@ -46,12 +46,12 @@ export default function EmailVerificationBanner() {
   if (!showBanner || !user) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800">
+    <div className="relative w-full z-40 bg-amber-50 dark:bg-amber-950/60 border-b border-amber-200 dark:border-amber-800/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-amber-800 dark:text-amber-200">
                 Verify your email address
               </p>

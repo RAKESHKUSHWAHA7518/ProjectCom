@@ -90,14 +90,14 @@ export default function TimezoneBanner() {
   if (!showBanner || !user || user.timezone) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-blue-50 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800">
+    <div className="relative w-full z-40 bg-blue-50 dark:bg-blue-950/60 border-b border-blue-200 dark:border-blue-800/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
               <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-blue-800 dark:text-blue-200">
                 Set your timezone
               </p>
@@ -116,12 +116,12 @@ export default function TimezoneBanner() {
         </div>
 
         <div className="mt-3 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="relative flex-1 min-w-0">
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
             <select
               value={selectedTimezone}
               onChange={e => setSelectedTimezone(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 border border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              className="w-full pl-10 pr-10 py-2.5 border border-blue-300 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-850 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none text-sm"
             >
               <option value="">{t('Select your timezone')}</option>
               <option value={detectedTimezone} disabled>
@@ -135,7 +135,7 @@ export default function TimezoneBanner() {
           <button
             onClick={handleSave}
             disabled={isSaving || !selectedTimezone}
-            className="px-6 py-2.5 font-semibold text-white bg-blue-600 dark:bg-blue-700 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition flex items-center gap-2"
+            className="px-6 py-2.5 font-semibold text-white bg-blue-600 dark:bg-blue-700 rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition flex items-center justify-center gap-2 shrink-0 text-sm shadow-sm"
           >
             {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
             {isSaving ? 'Saving...' : 'Confirm & Save'}

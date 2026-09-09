@@ -17,10 +17,10 @@ export const useSkillStore = create((set) => ({
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      set({ skills: data, isLoading: false });
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch skills');
+      set({ skills: Array.isArray(data) ? data : [], isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ skills: [], error: error.message, isLoading: false });
     }
   },
 
@@ -65,10 +65,10 @@ export const useSkillStore = create((set) => ({
         headers: { Authorization: `Bearer ${user.token}` },
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-      set({ matches: data, isLoading: false });
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch matches');
+      set({ matches: Array.isArray(data) ? data : [], isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ matches: [], error: error.message, isLoading: false });
     }
   },
 }));

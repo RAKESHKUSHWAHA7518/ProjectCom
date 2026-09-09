@@ -1,10 +1,12 @@
 import rateLimit from 'express-rate-limit';
 import logger from '../utils/logger.js';
 
+const isProd = process.env.NODE_ENV === 'production';
+
 export const createRateLimiter = (options = {}) => {
   const defaultOptions = {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: isProd ? 2000 : 10000, // 2000 in prod, 10000 in dev
     message: {
       error: 'Too many requests from this IP, please try again later.',
       retryAfter: '15 minutes',
@@ -33,12 +35,12 @@ export const createRateLimiter = (options = {}) => {
 
 export const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: isProd ? 2000 : 10000,
 });
 
 export const authLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 10, // Stricter for auth endpoints
+  max: isProd ? 100 : 1000,
   message: {
     error: 'Too many authentication attempts, please try again later.',
     retryAfter: '15 minutes',
@@ -47,7 +49,7 @@ export const authLimiter = createRateLimiter({
 
 export const searchLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 searches per minute
+  max: isProd ? 120 : 1000,
   message: {
     error: 'Too many search requests, please slow down.',
     retryAfter: '1 minute',
@@ -56,7 +58,7 @@ export const searchLimiter = createRateLimiter({
 
 export const uploadLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20, // 20 uploads per hour
+  max: isProd ? 50 : 500,
   message: {
     error: 'Upload limit reached, please try again later.',
     retryAfter: '1 hour',
@@ -65,7 +67,7 @@ export const uploadLimiter = createRateLimiter({
 
 export const sessionLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: process.env.NODE_ENV === 'production' ? 20 : 500, // 20 session bookings per hour in prod, permissive in dev
+  max: isProd ? 50 : 1000,
   message: {
     error: 'Too many session booking requests, please try again later.',
     retryAfter: '1 hour',
@@ -75,7 +77,7 @@ export const sessionLimiter = createRateLimiter({
 
 export const messageLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 messages per minute
+  max: isProd ? 120 : 1000,
   message: {
     error: 'Too many messages, please slow down.',
     retryAfter: '1 minute',

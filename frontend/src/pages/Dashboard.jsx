@@ -211,21 +211,23 @@ export default function Dashboard() {
               />
             )}
 
-            <div className="flex gap-2">
-              <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
-                <option value="teach">{t('I want to TEACH')}</option>
-                <option value="learn">{t('I want to LEARN')}</option>
-              </select>
-              <select className="flex-1 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-                <option value="expert">Expert</option>
-              </select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="grid grid-cols-2 gap-2 flex-1 min-w-0">
+                <select className="w-full min-w-0 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
+                  <option value="teach">{t('I want to TEACH')}</option>
+                  <option value="learn">{t('I want to LEARN')}</option>
+                </select>
+                <select className="w-full min-w-0 px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                  <option value="expert">Expert</option>
+                </select>
+              </div>
               <button
                 type="submit"
                 disabled={!newSkill.category || (!newSkill.name || (newSkill.name === '__custom__' && !customSkillName))}
-                className="px-5 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-lg hover:shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-6 py-2.5 text-white font-medium bg-gradient-to-r from-primary-600 to-indigo-600 rounded-lg hover:shadow-lg transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0 flex items-center justify-center"
               >
                 {t('Add')}
               </button>

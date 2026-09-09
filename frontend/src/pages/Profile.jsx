@@ -42,15 +42,25 @@ export default function Profile() {
         const skillsRes = await fetch(`${API_URL}/skills`, {
           headers: { Authorization: `Bearer ${currentUser.token}` },
         });
-        setSkills(await skillsRes.json());
+        if (skillsRes.ok) {
+          const skillsData = await skillsRes.json();
+          setSkills(Array.isArray(skillsData) ? skillsData : []);
+        } else {
+          setSkills([]);
+        }
         fetchReviews(currentUser._id);
       } else {
         const res = await fetch(`${API_URL}/users/${id}`, {
           headers: { Authorization: `Bearer ${currentUser.token}` },
         });
-        const data = await res.json();
-        setProfile(data.user);
-        setSkills(data.skills || []);
+        if (res.ok) {
+          const data = await res.json();
+          setProfile(data.user);
+          setSkills(Array.isArray(data.skills) ? data.skills : []);
+        } else {
+          setProfile(null);
+          setSkills([]);
+        }
         fetchReviews(id);
       }
     } catch {
@@ -149,8 +159,9 @@ export default function Profile() {
     if (profile.name) score += 20;
     if (profile.bio) score += 20;
     if (profile.location) score += 15;
-    if (skills.filter(s => s.type === 'teach').length > 0) score += 20;
-    if (skills.filter(s => s.type === 'learn').length > 0) score += 15;
+    const safeList = Array.isArray(skills) ? skills : [];
+    if (safeList.filter(s => s.type === 'teach').length > 0) score += 20;
+    if (safeList.filter(s => s.type === 'learn').length > 0) score += 15;
     if (profile.avatar) score += 10;
     return score;
   };
@@ -191,7 +202,7 @@ export default function Profile() {
       });
       if (res.ok) {
         const newEndorsements = await res.json();
-        setSkills(skills.map(s => s._id === skillId ? { ...s, endorsements: newEndorsements } : s));
+        setSkills(prev => (Array.isArray(prev) ? prev : []).map(s => s._id === skillId ? { ...s, endorsements: newEndorsements } : s));
       } else {
         const data = await res.json();
         toast.error(data.message || 'Failed to endorse skill');
@@ -201,6 +212,7 @@ export default function Profile() {
     }
   };
 
+  const safeSkills = Array.isArray(skills) ? skills : [];
   const completeness = getCompletenessScore();
 
   return (
@@ -320,8 +332,8 @@ export default function Profile() {
                   {!profile.bio && <li>{t('Add a short bio')}</li>}
                   {!profile.location && <li>{t('Add your location')}</li>}
                   {!profile.avatar && <li>{t('Upload an avatar')}</li>}
-                  {skills.filter(s => s.type === 'teach').length === 0 && <li>{t('Add skills you can teach')}</li>}
-                  {skills.filter(s => s.type === 'learn').length === 0 && <li>{t('Add skills you want to learn')}</li>}
+                  {safeSkills.filter(s => s.type === 'teach').length === 0 && <li>{t('Add skills you can teach')}</li>}
+                  {safeSkills.filter(s => s.type === 'learn').length === 0 && <li>{t('Add skills you want to learn')}</li>}
                 </ul>
               </div>
             )}
@@ -372,7 +384,7 @@ export default function Profile() {
           <div className="mb-4">
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Teaching')}</h4>
             <div className="flex flex-wrap gap-2">
-              {skills.filter(s => s.type === 'teach').map(s => {
+              {safeSkills.filter(s => s.type === 'teach').map(s => {
                 const isEndorsed = s.endorsements?.includes(currentUser?._id);
                 const count = s.endorsements?.length || 0;
                 return (
@@ -397,18 +409,18 @@ export default function Profile() {
                   </div>
                 );
               })}
-              {skills.filter(s => s.type === 'teach').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No teaching skills')}</p>}
+              {safeSkills.filter(s => s.type === 'teach').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No teaching skills')}</p>}
             </div>
           </div>
           <div>
             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Learning')}</h4>
             <div className="flex flex-wrap gap-2">
-              {skills.filter(s => s.type === 'learn').map(s => (
+              {safeSkills.filter(s => s.type === 'learn').map(s => (
                 <span key={s._id} className="px-3 py-1.5 text-sm font-medium bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-800">
                   {s.name} • {s.proficiencyLevel}
                 </span>
               ))}
-              {skills.filter(s => s.type === 'learn').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No learning skills')}</p>}
+              {safeSkills.filter(s => s.type === 'learn').length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">{t('No learning skills')}</p>}
             </div>
           </div>
         </div>
