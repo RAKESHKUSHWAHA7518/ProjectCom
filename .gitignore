@@ -46,6 +46,8 @@ coverage/
 *.py
 
 # Local planning & documentation notes (kept local, not pushed)
+docs/
+doc/
 LAUNCH_PLAN.md
 IMPROVEMENTS.md
 *PLAN*.md
