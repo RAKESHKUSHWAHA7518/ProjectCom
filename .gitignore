@@ -7,10 +7,8 @@ node_modules/
 dist/
 dist-ssr/
 build/
-
+dev-dist
 # Environment variables & secrets
-.env
-.env.*
 !.env.example
 
 # Logs
@@ -23,7 +21,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor & IDE files
-.vscode/
 .idea/
 *.suo
 *.ntvs*
@@ -51,3 +48,4 @@ doc/
 LAUNCH_PLAN.md
 IMPROVEMENTS.md
 *PLAN*.md
+config.bat

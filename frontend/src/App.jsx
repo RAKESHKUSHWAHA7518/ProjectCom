@@ -444,8 +444,8 @@ function Navbar({ onSearchClick }) {
             </Link>
           </div>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Desktop / Large Screen Nav */}
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5">
             {user ? (
               <>
                 {navLinks.map((link) => {
@@ -456,12 +456,12 @@ function Navbar({ onSearchClick }) {
                       key={link.to}
                       to={link.to}
                       onMouseEnter={() => preloadMap[link.to]?.()}
-                      className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${active
+                      className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-xs xl:text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap ${active
                         ? 'nav-active font-semibold'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                     >
-                      <Icon className="w-4 h-4" strokeWidth={active ? 2.5 : 2} />
+                      <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2.5 : 2} />
                       {link.label}
                     </Link>
                   )
@@ -469,12 +469,12 @@ function Navbar({ onSearchClick }) {
 
                 <button
                   onClick={onSearchClick}
-                  className="flex items-center gap-2 px-3 py-1.5 ml-1 text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-750 transition-all group"
+                  className="flex items-center gap-2 px-2.5 xl:px-3 py-1.5 ml-1 text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-750 transition-all group shrink-0"
                   aria-label="Search"
                 >
                   <Search className="w-4 h-4 group-hover:text-primary-500 transition-colors" />
-                  <span className="hidden lg:inline">Search...</span>
-                  <kbd className="hidden lg:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-400">
+                  <span className="hidden xl:inline">Search...</span>
+                  <kbd className="hidden 2xl:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-400">
                     <span className="text-[8px]">Ctrl</span> K
                   </kbd>
                 </button>
@@ -485,9 +485,9 @@ function Navbar({ onSearchClick }) {
                 <LanguageToggle />
                 <NotificationBell />
 
-                 <Link
+                <Link
                   to="/profile"
-                  className="ml-1 transition-all duration-200"
+                  className="ml-1 transition-all duration-200 shrink-0"
                 >
                   <Avatar src={user.avatar} name={user.name} size="sm" className="ring-2 ring-white dark:ring-gray-900 shadow-lg shadow-primary-500/20" />
                 </Link>
@@ -519,19 +519,27 @@ function Navbar({ onSearchClick }) {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-1">
+          {/* Tablet & Mobile Nav Bar */}
+          <div className="lg:hidden flex items-center gap-1.5">
             <button
               onClick={onSearchClick}
-              className="p-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
               aria-label="Search"
             >
               <Search className="w-5 h-5" />
             </button>
             <ThemeToggle />
+            {user && (
+              <>
+                <NotificationBell />
+                <Link to="/profile" className="ml-1 transition-all duration-200">
+                  <Avatar src={user.avatar} name={user.name} size="sm" className="ring-2 ring-white dark:ring-gray-900 shadow" />
+                </Link>
+              </>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
+              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all"
               aria-label="Toggle menu"
             >
               <AnimatePresence mode="wait" initial={false}>
@@ -549,7 +557,7 @@ function Navbar({ onSearchClick }) {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Tablet & Mobile Slide-Down Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
@@ -557,42 +565,68 @@ function Navbar({ onSearchClick }) {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="md:hidden overflow-hidden"
+              className="lg:hidden overflow-hidden"
             >
-              <div className="pb-4 border-t border-gray-100 dark:border-gray-800 mt-2 pt-3 space-y-1">
+              <div className="pb-4 border-t border-gray-100 dark:border-gray-800 mt-2 pt-3 space-y-2">
                 {user ? (
                   <>
-                    {navLinks.map((link) => {
-                      const Icon = link.icon
-                      const active = isActive(link.to)
-                      return (
-                        <Link
-                          key={link.to}
-                          to={link.to}
-                          onMouseEnter={() => preloadMap[link.to]?.()}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${active
-                            ? 'nav-active font-semibold'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                            }`}
-                        >
-                          <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
-                          {link.label}
-                        </Link>
-                      )
-                    })}
-                    <Link
-                      to="/profile"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${isActive('/profile')
-                        ? 'nav-active font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                    >
-                      <User className="w-5 h-5" />
-                      Profile
-                    </Link>
+                    {/* User Mini Profile Header */}
+                    <div className="flex items-center justify-between px-4 py-3 mb-2 bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700/60">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar src={user.avatar} name={user.name} size="md" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="px-2.5 py-1 text-xs font-semibold text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-950/60 rounded-lg">
+                          {user.skillCredits || 0} Credits
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Navigation Links Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                      {navLinks.map((link) => {
+                        const Icon = link.icon
+                        const active = isActive(link.to)
+                        return (
+                          <Link
+                            key={link.to}
+                            to={link.to}
+                            onMouseEnter={() => preloadMap[link.to]?.()}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${active
+                              ? 'nav-active font-semibold'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                              }`}
+                          >
+                            <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 2} />
+                            {link.label}
+                          </Link>
+                        )
+                      })}
+                      <Link
+                        to="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all ${isActive('/profile')
+                          ? 'nav-active font-semibold'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                      >
+                        <User className="w-5 h-5" />
+                        Profile
+                      </Link>
+                    </div>
+
                     <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
+
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Language</span>
+                      <LanguageToggle />
+                    </div>
+
                     <button
                       onClick={() => { handleLogout(); setMobileMenuOpen(false) }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
@@ -603,6 +637,10 @@ function Navbar({ onSearchClick }) {
                   </>
                 ) : (
                   <>
+                    <div className="flex items-center justify-between px-4 py-2 mb-2">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Language</span>
+                      <LanguageToggle />
+                    </div>
                     <Link
                       to="/login"
                       onClick={() => setMobileMenuOpen(false)}
@@ -692,7 +730,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
+        <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
           <SkipLink />
           <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
           <SocketManager />
@@ -700,7 +738,7 @@ function App() {
           <TimezoneBanner />
           <Navbar onSearchClick={() => setIsSearchOpen(true)} />
           <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-          <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="main">
+          <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" role="main">
             <React.Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
