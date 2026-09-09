@@ -29,6 +29,7 @@ export const updateProfile = async (req, res) => {
     if (availability) user.availability = availability;
     if (socialLinks) user.socialLinks = { ...user.socialLinks, ...socialLinks };
     if (avatar !== undefined) user.avatar = avatar;
+    if (req.body.hasSeenTour !== undefined) user.hasSeenTour = req.body.hasSeenTour;
 
     // Recalculate profile completeness concurrently
     const [teachSkills, learnSkills] = await Promise.all([
@@ -58,6 +59,7 @@ export const updateProfile = async (req, res) => {
       totalSessionsAsLearner: updatedUser.totalSessionsAsLearner,
       streak: updatedUser.streak,
       badges: updatedUser.badges,
+      hasSeenTour: updatedUser.hasSeenTour,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

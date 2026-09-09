@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import toast from 'react-hot-toast'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, LayoutDashboard, CalendarDays, MessageCircle, Trophy, Globe,
   Bell, User, LogOut, Menu, X, ArrowRight, Sparkles, Video, Award,

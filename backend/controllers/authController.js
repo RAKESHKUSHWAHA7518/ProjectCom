@@ -118,6 +118,8 @@ export const loginUser = async (req, res) => {
 
     setTokenCookie(res, refreshTokenPlain);
 
+    const hasSeenTour = user.hasSeenTour || user.profileComplete || (user.totalSessionsAsMentor > 0) || (user.totalSessionsAsLearner > 0);
+
     res.json({
       _id: user.id,
       name: user.name,
@@ -125,6 +127,7 @@ export const loginUser = async (req, res) => {
       role: user.role,
       profileComplete: user.profileComplete,
       skillCredits: user.skillCredits,
+      hasSeenTour: !!hasSeenTour,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -200,6 +203,8 @@ export const googleLogin = async (req, res) => {
       sendWelcomeEmail(user).catch(() => {});
     }
 
+    const hasSeenTour = !isNewUser && (user.hasSeenTour || user.profileComplete || (user.totalSessionsAsMentor > 0) || (user.totalSessionsAsLearner > 0));
+
     res.json({
       _id: user.id,
       name: user.name,
@@ -208,6 +213,7 @@ export const googleLogin = async (req, res) => {
       role: user.role,
       profileComplete: user.profileComplete,
       skillCredits: user.skillCredits,
+      hasSeenTour: !!hasSeenTour,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -261,7 +267,7 @@ export const refreshToken = async (req, res) => {
     const updated = await User.findOneAndUpdate(
       { _id: user._id, refreshTokenHash: currentHash },
       { refreshTokenHash: newRefreshTokenHash },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {

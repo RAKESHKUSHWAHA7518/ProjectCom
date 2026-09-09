@@ -75,13 +75,17 @@ describe('Property 11: Image Resize Dimension Invariant', () => {
           assert.ok(metadata.width <= 400, `width ${metadata.width} exceeds 400`);
           assert.ok(metadata.height <= 400, `height ${metadata.height} exceeds 400`);
 
-          const inputRatio = w / h;
-          const outputRatio = metadata.width / metadata.height;
-          const ratioError = Math.abs(inputRatio - outputRatio);
+          const scale = Math.min(400 / w, 400 / h);
+          const expectedW = Math.max(1, Math.round(w * scale));
+          const expectedH = Math.max(1, Math.round(h * scale));
 
           assert.ok(
-            ratioError < 0.01,
-            `Aspect ratio mismatch: input=${inputRatio.toFixed(4)}, output=${outputRatio.toFixed(4)}, diff=${ratioError.toFixed(4)}`
+            Math.abs(metadata.width - expectedW) <= 1,
+            `Width mismatch: actual=${metadata.width}, expected=${expectedW}`
+          );
+          assert.ok(
+            Math.abs(metadata.height - expectedH) <= 1,
+            `Height mismatch: actual=${metadata.height}, expected=${expectedH}`
           );
         }
       ),
