@@ -4,7 +4,7 @@ import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import { useNavigate } from 'react-router-dom';
 import { useChatStore } from '../store/chatStore';
 import toast from 'react-hot-toast';
-import { Search, MapPin, Star, Coins, Zap } from 'lucide-react';
+import { Search, MapPin, Star, Coins, Zap, Sparkles } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import { useTranslation } from 'react-i18next';

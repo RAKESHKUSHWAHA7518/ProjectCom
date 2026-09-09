@@ -76,10 +76,10 @@ import adminRoutes from './routes/adminRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 
 app.use('/api/health', healthRoutes);
-app.use('/api/auth', authLimiter, authRoutes); // Stricter auth rate limit
+app.use('/api/auth', authRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/matches', matchRoutes);
-app.use('/api/sessions', sessionLimiter, sessionRoutes); // Session booking limit
+app.use('/api/sessions', sessionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/chat', messageLimiter, chatRoutes); // Message rate limit
@@ -169,6 +169,9 @@ io.on('connection', (socket) => {
   });
   socket.on('video-chat-message', (payload) => {
     socket.to(payload.target).emit('video-chat-message', payload.message);
+  });
+  socket.on('toggle-media', (payload) => {
+    socket.to(payload.target).emit('toggle-media', payload);
   });
 
   // --- NOTIFICATION EVENTS ---

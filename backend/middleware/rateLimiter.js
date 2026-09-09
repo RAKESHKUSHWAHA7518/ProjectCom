@@ -23,7 +23,7 @@ export const createRateLimiter = (options = {}) => {
       });
     },
     skip: (req) => {
-      if (req.path.startsWith('/api/health')) return true;
+      if (req.path.startsWith('/api/health') || req.path.includes('/login')) return true;
       return false;
     },
   };
@@ -65,11 +65,12 @@ export const uploadLimiter = createRateLimiter({
 
 export const sessionLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 session bookings per hour
+  max: process.env.NODE_ENV === 'production' ? 20 : 500, // 20 session bookings per hour in prod, permissive in dev
   message: {
-    error: 'Too many session requests, please try again later.',
+    error: 'Too many session booking requests, please try again later.',
     retryAfter: '1 hour',
   },
+  skip: (req) => req.method !== 'POST',
 });
 
 export const messageLimiter = createRateLimiter({

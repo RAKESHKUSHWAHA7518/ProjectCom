@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { CATEGORIES } from '../data/skillsData';
 import { useTranslation } from 'react-i18next';
 

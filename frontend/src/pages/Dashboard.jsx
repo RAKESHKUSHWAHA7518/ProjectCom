@@ -5,7 +5,7 @@ import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import toast from 'react-hot-toast';
-import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2 } from 'lucide-react';
+import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2, Sparkles } from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import OnboardingTour from '../components/OnboardingTour';
