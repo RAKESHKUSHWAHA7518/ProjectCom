@@ -44,3 +44,8 @@ coverage/
 .agents/
 .gemini/
 *.py
+
+# Local planning & documentation notes (kept local, not pushed)
+LAUNCH_PLAN.md
+IMPROVEMENTS.md
+*PLAN*.md
