@@ -6,12 +6,13 @@ import {
   addSessionNote,
 } from '../controllers/sessionController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { sessionLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, getMySessions)
-  .post(protect, createSession);
+  .post(protect, sessionLimiter, createSession);
 
 router.route('/:id')
   .put(protect, updateSessionStatus);

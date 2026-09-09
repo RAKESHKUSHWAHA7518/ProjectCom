@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useCommunityStore } from '../store/communityStore';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
+import { Users, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Community() {

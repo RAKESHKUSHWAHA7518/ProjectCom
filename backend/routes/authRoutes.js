@@ -46,7 +46,7 @@ const resendVerificationLimiter = rateLimit({
 });
 
 router.post('/register', authLimiter, validateRegister, handleValidationErrors, registerUser);
-router.post('/login', authLimiter, validateLogin, handleValidationErrors, loginUser);
+router.post('/login', validateLogin, handleValidationErrors, loginUser);
 router.post('/google', authLimiter, googleLogin);
 router.post('/refresh', refreshToken);
 router.post('/logout', logoutUser);

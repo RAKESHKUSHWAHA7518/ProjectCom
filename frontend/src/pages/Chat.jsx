@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { connectSocket, getSocket } from '../utils/socket';
-import { Send, ArrowLeft } from 'lucide-react';
+import { Send, ArrowLeft, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function Chat() {

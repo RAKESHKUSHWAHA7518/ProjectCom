@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle, Sparkles, Search, Calendar, Video, MessageCircle, Star, Zap, Clock } from 'lucide-react';
 
 import { useAuthStore } from '../store/authStore';

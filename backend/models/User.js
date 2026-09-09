@@ -93,6 +93,10 @@ const userSchema = mongoose.Schema(
       type: [String],
       default: [],
     },
+    hasSeenTour: {
+      type: Boolean,
+      default: false,
+    },
 
     // Verification fields
     verification: {

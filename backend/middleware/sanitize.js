@@ -57,14 +57,38 @@ export const sanitizeObject = (obj, options = {}) => {
 
 export const sanitizeMiddleware = (options = {}) => {
   return (req, res, next) => {
-    if (req.body) {
-      req.body = sanitizeObject(req.body, options);
-    }
-    if (req.query) {
-      req.query = sanitizeObject(req.query, { ...options, recursive: false });
-    }
-    if (req.params) {
-      req.params = sanitizeObject(req.params, { ...options, recursive: false });
+    try {
+      if (req.body && typeof req.body === 'object') {
+        req.body = sanitizeObject(req.body, options);
+      }
+      if (req.query && typeof req.query === 'object') {
+        const sanitizedQuery = sanitizeObject(req.query, { ...options, recursive: false });
+        try {
+          req.query = sanitizedQuery;
+        } catch {
+          Object.defineProperty(req, 'query', {
+            value: sanitizedQuery,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          });
+        }
+      }
+      if (req.params && typeof req.params === 'object') {
+        const sanitizedParams = sanitizeObject(req.params, { ...options, recursive: false });
+        try {
+          req.params = sanitizedParams;
+        } catch {
+          Object.defineProperty(req, 'params', {
+            value: sanitizedParams,
+            writable: true,
+            configurable: true,
+            enumerable: true,
+          });
+        }
+      }
+    } catch (err) {
+      return next(err);
     }
     next();
   };

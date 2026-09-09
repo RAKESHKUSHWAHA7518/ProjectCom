@@ -1,8 +1,8 @@
 import { Resend } from 'resend';
 import logger from '../utils/logger.js';
 
-// Initialize Resend SDK with your API key
-const resend = new Resend(process.env.EMAIL_PASS);
+// Initialize Resend SDK with API key or fallback to prevent module loading crash in test/dev
+const resend = new Resend(process.env.EMAIL_PASS || 're_dummy_for_testing');
 
 /**
  * Send an email verification link to the user.
@@ -10,6 +10,10 @@ const resend = new Resend(process.env.EMAIL_PASS);
  * @param {string} plainToken
  */
 export async function sendVerificationEmail(user, plainToken) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendVerificationEmail');
+    return;
+  }
   const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${plainToken}`;
 
   try {
@@ -89,6 +93,10 @@ export async function sendVerificationEmail(user, plainToken) {
  * @param {{ email: string, name: string }} user
  */
 export async function sendWelcomeEmail(user) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendWelcomeEmail');
+    return;
+  }
   const frontendUrl = process.env.FRONTEND_URL;
   const profileUrl = `${frontendUrl}/profile`;
 
@@ -164,6 +172,10 @@ export async function sendWelcomeEmail(user) {
  * @param {string} plainToken
  */
 export async function sendPasswordResetEmail(user, plainToken) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendPasswordResetEmail');
+    return;
+  }
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${plainToken}`;
 
   try {
@@ -241,6 +253,10 @@ export async function sendPasswordResetEmail(user, plainToken) {
  * @param {{ email: string, name: string }} user
  */
 export async function sendPasswordResetConfirmEmail(user) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendPasswordResetConfirmEmail');
+    return;
+  }
   try {
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
