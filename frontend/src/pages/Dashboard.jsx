@@ -60,12 +60,12 @@ export default function Dashboard() {
   const completedCount = sessions.filter((s) => s.status === 'completed').length;
 
   return (
-    <div className="py-8">
+    <div className="py-6 sm:py-8 w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{t('Welcome back', { name: user?.name || '' })}</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">{t('Portfolio desc')}</p>
+          <p className="mt-1 text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('Portfolio desc')}</p>
         </div>
         <Link to="/profile" className="self-start sm:self-auto px-4 py-2 text-sm font-medium text-primary-700 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/40 transition">
           {t('View Profile')}
@@ -73,33 +73,33 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="p-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
-          <div className="text-3xl font-bold">{user?.skillCredits || 0}</div>
-          <div className="text-sm text-blue-100 mt-1">{t('Credits Available')}</div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
+          <div className="text-2xl sm:text-3xl font-bold">{user?.skillCredits || 0}</div>
+          <div className="text-xs sm:text-sm text-blue-100 mt-1">{t('Credits Available')}</div>
         </div>
-        <div className="p-5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
-          <div className="text-3xl font-bold">{skills.filter((s) => s.type === 'teach').length}</div>
-          <div className="text-sm text-emerald-100 mt-1">{t('Skills Teaching')}</div>
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
+          <div className="text-2xl sm:text-3xl font-bold">{skills.filter((s) => s.type === 'teach').length}</div>
+          <div className="text-xs sm:text-sm text-emerald-100 mt-1">{t('Skills Teaching')}</div>
         </div>
-        <div className="p-5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl text-white shadow-lg shadow-orange-500/20">
-          <div className="text-3xl font-bold">{pendingCount}</div>
-          <div className="text-sm text-orange-100 mt-1">{t('Pending Sessions')}</div>
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl text-white shadow-lg shadow-orange-500/20">
+          <div className="text-2xl sm:text-3xl font-bold">{pendingCount}</div>
+          <div className="text-xs sm:text-sm text-orange-100 mt-1">{t('Pending Sessions')}</div>
         </div>
-        <div className="p-5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl text-white shadow-lg shadow-purple-500/20">
-          <div className="text-3xl font-bold">{completedCount}</div>
-          <div className="text-sm text-purple-100 mt-1">{t('Completed')}</div>
+        <div className="p-4 sm:p-5 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl text-white shadow-lg shadow-purple-500/20">
+          <div className="text-2xl sm:text-3xl font-bold">{completedCount}</div>
+          <div className="text-xs sm:text-sm text-purple-100 mt-1">{t('Completed')}</div>
         </div>
       </div>
 
       {/* Personal Analytics Dashboard */}
       {personalStats && (
-        <div className="mb-8 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
+        <div className="mb-8 p-5 sm:p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm rounded-2xl">
           <h2 className="mb-6 text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-primary-500" /> {t('Personal Analytics')}
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sessions Over Time */}
             <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{t('Sessions (Last 6 Months)')}</h3>

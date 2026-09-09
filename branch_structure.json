@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "clean-code",
+    "main",
+    "origin",
+    "phase-2"
+  ],
+  "parent": {
+    "clean-code": "main",
+    "main": null,
+    "origin": "main",
+    "phase-2": "main"
+  },
+  "order": [
+    "main",
+    "clean-code",
+    "origin",
+    "phase-2"
+  ]
+}
