@@ -4,6 +4,8 @@ import { useVerificationStore } from './verificationStore';
 // Note: In an actual app these endpoints point to localhost:5000/api or similar
 const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth`;
 
+let refreshPromise = null;
+
 export const useAuthStore = create((set, get) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,
   isLoading: false,
@@ -68,36 +70,44 @@ export const useAuthStore = create((set, get) => ({
   },
 
   refreshAccessToken: async () => {
-    try {
-      const response = await fetch(`${API_URL}/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+    if (refreshPromise) return refreshPromise;
 
-      // Account deactivated — force logout and redirect
-      if (response.status === 403) {
-        const data = await response.json();
-        if (data.message && data.message.toLowerCase().includes('deactivated')) {
-          get().logout();
-          window.location.href = '/login';
-          return null;
-        }
-      }
+    refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_URL}/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        const currentUser = get().user;
-        if (currentUser) {
-          const updatedUser = { ...currentUser, token: data.token };
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          set({ user: updatedUser });
-          return data.token;
+        // Account deactivated — force logout and redirect
+        if (response.status === 403) {
+          const data = await response.json();
+          if (data.message && data.message.toLowerCase().includes('deactivated')) {
+            get().logout();
+            window.location.href = '/login';
+            return null;
+          }
         }
+
+        if (response.ok) {
+          const data = await response.json();
+          const currentUser = get().user;
+          if (currentUser) {
+            const updatedUser = { ...currentUser, token: data.token };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            set({ user: updatedUser });
+            return data.token;
+          }
+        }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        refreshPromise = null;
       }
-      return null;
-    } catch {
-      return null;
-    }
+    })();
+
+    return refreshPromise;
   },
 
   refreshUser: async () => {
@@ -117,7 +127,6 @@ export const useAuthStore = create((set, get) => ({
             headers: { Authorization: `Bearer ${newToken}` }
           });
         } else {
-          get().logout();
           return;
         }
       }

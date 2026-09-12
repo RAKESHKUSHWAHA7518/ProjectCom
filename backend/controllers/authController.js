@@ -11,9 +11,9 @@ import {
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy-client-id');
 
-// Generate Access Token (15m)
+// Generate Access Token (7d for stable persistent sessions and uninterrupted meetings)
 const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
 // Generate Refresh Token (7d)
 const generateRefreshToken = (id) =>
@@ -26,13 +26,24 @@ const generateRefreshToken = (id) =>
 export const hashToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
-// Helper to set refresh token cookie
+// Helper to set refresh token cookie (supports cross-origin production environments like Vercel frontend)
 const setTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('jwt_refresh', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+const clearTokenCookie = (res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.cookie('jwt_refresh', '', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 0,
   });
 };
 
@@ -256,7 +267,7 @@ export const refreshToken = async (req, res) => {
     if (!currentHash || incomingHash !== currentHash) {
       // Possible reuse attack — invalidate all sessions
       await User.findByIdAndUpdate(user._id, { refreshTokenHash: null });
-      res.cookie('jwt_refresh', '', { httpOnly: true, maxAge: 0 });
+      clearTokenCookie(res);
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
@@ -272,7 +283,7 @@ export const refreshToken = async (req, res) => {
 
     if (!updated) {
       // Race condition — another request already rotated the token
-      res.cookie('jwt_refresh', '', { httpOnly: true, maxAge: 0 });
+      clearTokenCookie(res);
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
@@ -303,10 +314,7 @@ export const logoutUser = async (req, res) => {
       }
     }
 
-    res.cookie('jwt_refresh', '', {
-      httpOnly: true,
-      maxAge: 0,
-    });
+    clearTokenCookie(res);
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -416,7 +424,7 @@ export const resetPassword = async (req, res) => {
 
     sendPasswordResetConfirmEmail(user).catch(() => {});
 
-    res.clearCookie('jwt_refresh', { httpOnly: true });
+    clearTokenCookie(res);
     res.json({ message: 'Password reset successful' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -443,7 +451,7 @@ export const changePassword = async (req, res) => {
     user.refreshTokenHash = null; // invalidate all sessions
     await user.save();
 
-    res.clearCookie('jwt_refresh', { httpOnly: true });
+    clearTokenCookie(res);
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

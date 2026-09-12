@@ -10,7 +10,7 @@ export const useNotificationStore = create((set) => ({
 
   fetchNotifications: async () => {
     try {
-      const { user, refreshAccessToken, logout } = useAuthStore.getState();
+      const { user, refreshAccessToken } = useAuthStore.getState();
       if (!user?.token) return;
       let response = await fetch(`${API_URL}/notifications`, {
         headers: { Authorization: `Bearer ${user.token}` },
@@ -23,7 +23,7 @@ export const useNotificationStore = create((set) => ({
             headers: { Authorization: `Bearer ${newToken}` },
           });
         } else {
-          logout();
+          console.warn('Notification polling unauthorized; skipping update without forced logout');
           return;
         }
       }
