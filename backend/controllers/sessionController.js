@@ -1,6 +1,27 @@
 import Session from '../models/Session.js';
 import User from '../models/User.js';
+import Skill from '../models/Skill.js';
 import Notification from '../models/Notification.js';
+import {
+  sendSessionRequestEmail,
+  sendSessionConfirmedEmail,
+} from '../services/emailService.js';
+
+// Helper: save a notification and instantly push it via socket if user is online
+async function createAndEmit(req, payload) {
+  const notif = await Notification.create(payload);
+  try {
+    const io = req.app?.get('io');
+    const onlineUsers = req.app?.get('onlineUsers');
+    const targetId = String(payload.user);
+    if (io && onlineUsers && onlineUsers.has(targetId)) {
+      io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
+    }
+  } catch {
+    // Socket emit failure shouldn't throw
+  }
+  return notif;
+}
 
 // @desc    Create a new session request
 // @route   POST /api/sessions
@@ -20,6 +41,9 @@ export const createSession = async (req, res) => {
       return res.status(400).json({ message: 'You cannot book a session with yourself' });
     }
 
+    const skill = skillId ? await Skill.findById(skillId) : null;
+    const skillName = skill?.name || 'Skill Exchange';
+
     const session = await Session.create({
       mentor: mentorId,
       learner: req.user.id,
@@ -28,15 +52,25 @@ export const createSession = async (req, res) => {
       notes,
     });
 
-    // Create notification for mentor
-    await Notification.create({
+    // Create real-time in-app notification for mentor
+    await createAndEmit(req, {
       user: mentorId,
       relatedUser: req.user.id,
       type: 'session_request',
-      title: 'New Session Request',
-      message: `${req.user.name} requested a session with you.`,
+      title: 'New Session Request 📅',
+      message: `${req.user.name} requested a session with you for ${skillName}.`,
       link: `/sessions`,
     });
+
+    // Send email notification to mentor and confirmation receipt to learner
+    sendSessionRequestEmail({
+      mentor,
+      learner: req.user,
+      skillName,
+      scheduledAt: session.scheduledAt,
+      notes: session.notes,
+      sessionId: session._id,
+    }).catch(() => {});
 
     res.status(201).json(session);
   } catch (error) {
@@ -106,19 +140,55 @@ export const updateSessionStatus = async (req, res) => {
 
     // Notify other party
     const recipient = session.mentor.toString() === req.user.id ? session.learner : session.mentor;
-    let notifType = 'system';
-    if (status === 'accepted') notifType = 'session_accepted';
-    if (status === 'cancelled') notifType = 'session_cancelled';
-    if (status === 'completed') notifType = 'session_completed';
+    const isAccepted = status === 'accepted';
+    const isCancelled = status === 'cancelled';
+    const isCompleted = status === 'completed';
 
-    await Notification.create({
+    const populatedSkill = session.skill ? await Skill.findById(session.skill) : null;
+    const skillName = populatedSkill?.name || 'Skill Exchange';
+
+    let notifType = 'system';
+    let notifTitle = 'Session Update';
+    let notifMessage = `Your session status was updated to ${status}.`;
+
+    if (isAccepted) {
+      notifType = 'session_accepted';
+      notifTitle = 'Session Confirmed! 🎉';
+      notifMessage = `${req.user.name} accepted your session for ${skillName}!`;
+    } else if (isCancelled) {
+      notifType = 'session_cancelled';
+      notifTitle = 'Session Cancelled';
+      notifMessage = `${req.user.name} cancelled the session for ${skillName}.`;
+    } else if (isCompleted) {
+      notifType = 'session_completed';
+      notifTitle = 'Session Completed 🌟';
+      notifMessage = `Your session with ${req.user.name} was marked as completed. Please leave a review!`;
+    }
+
+    await createAndEmit(req, {
       user: recipient,
       relatedUser: req.user.id,
       type: notifType,
-      title: 'Session Update',
-      message: `Your session status was updated to ${status}.`,
+      title: notifTitle,
+      message: notifMessage,
       link: `/sessions`,
     });
+
+    // If session is confirmed (accepted), send confirmation email with meeting link
+    if (isAccepted) {
+      const mentor = await User.findById(session.mentor);
+      const learner = await User.findById(session.learner);
+
+      if (mentor && learner) {
+        sendSessionConfirmedEmail({
+          mentor,
+          learner,
+          skillName,
+          scheduledAt: session.scheduledAt,
+          sessionId: session._id,
+        }).catch(() => {});
+      }
+    }
 
     res.json(session);
   } catch (error) {

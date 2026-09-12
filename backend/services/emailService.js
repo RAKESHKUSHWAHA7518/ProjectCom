@@ -322,3 +322,319 @@ export async function sendPasswordResetConfirmEmail(user) {
     logger.error('sendPasswordResetConfirmEmail failed catastrophically', { email: user.email, error: err.message });
   }
 }
+
+/**
+ * Send email notifications when a new session is requested.
+ * Sends notification to mentor (action required) and confirmation receipt to learner.
+ * @param {{ mentor: Object, learner: Object, skillName: string, scheduledAt: Date|string, notes?: string, sessionId: string }} params
+ */
+export async function sendSessionRequestEmail({ mentor, learner, skillName, scheduledAt, notes }) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendSessionRequestEmail');
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const sessionsUrl = `${frontendUrl}/sessions`;
+
+  const formattedDate = new Date(scheduledAt).toLocaleString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  // 1. Send Email to Mentor
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: mentor.email,
+      subject: `New Session Request from ${learner.name || 'Learner'} - SkillSwap`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+        <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:40px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                  <tr>
+                    <td style="background-color:#4f46e5;padding:32px 40px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">SkillSwap</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px;">
+                      <h2 style="margin:0 0 16px;color:#1f2937;font-size:20px;">New Session Request 📅</h2>
+                      <p style="margin:0 0 16px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Hi ${mentor.name || 'there'},
+                      </p>
+                      <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        <strong>${learner.name || 'A user'}</strong> has requested a skill exchange session with you!
+                      </p>
+                      <div style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:24px;">
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Learner:</strong> ${learner.name || 'Learner'} (${learner.email || ''})</p>
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Skill:</strong> ${skillName || 'Skill Exchange'}</p>
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Scheduled Time:</strong> ${formattedDate}</p>
+                        ${notes ? `<p style="margin:0;color:#374151;font-size:14px;"><strong>Notes:</strong> <em>"${notes}"</em></p>` : ''}
+                      </div>
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-radius:6px;background-color:#4f46e5;">
+                            <a href="${sessionsUrl}"
+                               style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;border-radius:6px;">
+                              Review & Accept Request
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                      <p style="margin:0;color:#9ca3af;font-size:12px;">&copy; ${new Date().getFullYear()} SkillSwap. All rights reserved.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    if (error) logger.error('Resend API Error (Session Request to Mentor)', { error });
+  } catch (err) {
+    logger.error('Failed to send session request email to mentor', { email: mentor.email, error: err.message });
+  }
+
+  // 2. Send Receipt Email to Learner
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: learner.email,
+      subject: `Session Request Sent to ${mentor.name || 'Mentor'} - SkillSwap`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+        <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:40px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                  <tr>
+                    <td style="background-color:#4f46e5;padding:32px 40px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">SkillSwap</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px;">
+                      <h2 style="margin:0 0 16px;color:#1f2937;font-size:20px;">Session Request Submitted! 🚀</h2>
+                      <p style="margin:0 0 16px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Hi ${learner.name || 'there'},
+                      </p>
+                      <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Your session request with <strong>${mentor.name || 'Mentor'}</strong> has been submitted. You will receive an email notification as soon as ${mentor.name || 'they'} confirm!
+                      </p>
+                      <div style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:24px;">
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Mentor:</strong> ${mentor.name || 'Mentor'}</p>
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Skill:</strong> ${skillName || 'Skill Exchange'}</p>
+                        <p style="margin:0 0 8px;color:#374151;font-size:14px;"><strong>Requested Time:</strong> ${formattedDate}</p>
+                        ${notes ? `<p style="margin:0;color:#374151;font-size:14px;"><strong>Your Note:</strong> <em>"${notes}"</em></p>` : ''}
+                      </div>
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-radius:6px;background-color:#4f46e5;">
+                            <a href="${sessionsUrl}"
+                               style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;border-radius:6px;">
+                              View Your Sessions
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                      <p style="margin:0;color:#9ca3af;font-size:12px;">&copy; ${new Date().getFullYear()} SkillSwap. All rights reserved.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    if (error) logger.error('Resend API Error (Session Request to Learner)', { error });
+  } catch (err) {
+    logger.error('Failed to send session request email to learner', { email: learner.email, error: err.message });
+  }
+}
+
+/**
+ * Send email notifications when a session is confirmed / accepted by the mentor.
+ * Sends confirmation email with meeting link to learner and mentor.
+ * @param {{ mentor: Object, learner: Object, skillName: string, scheduledAt: Date|string, sessionId: string }} params
+ */
+export async function sendSessionConfirmedEmail({ mentor, learner, skillName, scheduledAt, sessionId }) {
+  if (!process.env.EMAIL_PASS || process.env.EMAIL_PASS.startsWith('re_dummy')) {
+    logger.warn('EMAIL_PASS not configured, skipping sendSessionConfirmedEmail');
+    return;
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const sessionVideoUrl = `${frontendUrl}/video/${sessionId}`;
+  const sessionsUrl = `${frontendUrl}/sessions`;
+
+  const formattedDate = new Date(scheduledAt).toLocaleString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  // 1. Send Confirmation Email to Learner
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: learner.email,
+      subject: `Session Confirmed with ${mentor.name || 'Mentor'}! 🎉 - SkillSwap`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+        <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:40px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                  <tr>
+                    <td style="background-color:#10b981;padding:32px 40px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">SkillSwap</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px;">
+                      <h2 style="margin:0 0 16px;color:#1f2937;font-size:20px;">Your Session is Confirmed! 🎉</h2>
+                      <p style="margin:0 0 16px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Hi ${learner.name || 'there'},
+                      </p>
+                      <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Great news! <strong>${mentor.name || 'Your mentor'}</strong> has confirmed your skill exchange session!
+                      </p>
+                      <div style="background-color:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:20px;margin-bottom:24px;">
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Mentor:</strong> ${mentor.name || 'Mentor'} (${mentor.email || ''})</p>
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Skill:</strong> ${skillName || 'Skill Exchange'}</p>
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Confirmed Time:</strong> ${formattedDate}</p>
+                        <p style="margin:0;color:#065f46;font-size:14px;"><strong>Status:</strong> Confirmed & Ready</p>
+                      </div>
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-radius:6px;background-color:#10b981;">
+                            <a href="${sessionVideoUrl}"
+                               style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;border-radius:6px;">
+                              Join Video Call Room
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:20px 0 0;color:#6b7280;font-size:13px;">
+                        You can also manage your session at any time on <a href="${sessionsUrl}" style="color:#10b981;">your sessions dashboard</a>.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                      <p style="margin:0;color:#9ca3af;font-size:12px;">&copy; ${new Date().getFullYear()} SkillSwap. All rights reserved.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    if (error) logger.error('Resend API Error (Session Confirmed to Learner)', { error });
+  } catch (err) {
+    logger.error('Failed to send session confirmation email to learner', { email: learner.email, error: err.message });
+  }
+
+  // 2. Send Confirmation Email to Mentor
+  try {
+    const { error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM,
+      to: mentor.email,
+      subject: `Session Scheduled with ${learner.name || 'Learner'}! 🗓️ - SkillSwap`,
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+        <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f8;padding:40px 0;">
+            <tr>
+              <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                  <tr>
+                    <td style="background-color:#10b981;padding:32px 40px;text-align:center;">
+                      <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">SkillSwap</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:40px;">
+                      <h2 style="margin:0 0 16px;color:#1f2937;font-size:20px;">Session Scheduled! 🗓️</h2>
+                      <p style="margin:0 0 16px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        Hi ${mentor.name || 'there'},
+                      </p>
+                      <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
+                        You have confirmed your session with <strong>${learner.name || 'Learner'}</strong>. Here are the session details:
+                      </p>
+                      <div style="background-color:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:20px;margin-bottom:24px;">
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Learner:</strong> ${learner.name || 'Learner'} (${learner.email || ''})</p>
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Skill:</strong> ${skillName || 'Skill Exchange'}</p>
+                        <p style="margin:0 0 8px;color:#065f46;font-size:14px;"><strong>Time:</strong> ${formattedDate}</p>
+                      </div>
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="border-radius:6px;background-color:#10b981;">
+                            <a href="${sessionVideoUrl}"
+                               style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;border-radius:6px;">
+                              Join Video Call Room
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:20px 0 0;color:#6b7280;font-size:13px;">
+                        You can access your session and shared notes at any time on <a href="${sessionsUrl}" style="color:#10b981;">your sessions dashboard</a>.
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                      <p style="margin:0;color:#9ca3af;font-size:12px;">&copy; ${new Date().getFullYear()} SkillSwap. All rights reserved.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
+      `,
+    });
+    if (error) logger.error('Resend API Error (Session Confirmed to Mentor)', { error });
+  } catch (err) {
+    logger.error('Failed to send session confirmation email to mentor', { email: mentor.email, error: err.message });
+  }
+}
