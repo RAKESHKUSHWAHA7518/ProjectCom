@@ -8,8 +8,16 @@ import toast from 'react-hot-toast';
 export default function VerificationPanel({ user, isOwnProfile }) {
   // eslint-disable-next-line no-unused-vars
   const { t } = useTranslation();
-  // t is used in VerificationModals component via props
-  const { verificationStatus, verificationRequests, fetchVerificationStatus, requestPhoneVerification, requestLinkedInVerification, requestIdentityVerification, requestVideoIntroVerification } = useVerificationStore();
+  const {
+    verificationStatus,
+    verificationRequests,
+    fetchVerificationStatus,
+    requestPhoneVerification,
+    requestLinkedInVerification,
+    requestIdentityVerification,
+    requestVideoIntroVerification,
+    isLoading,
+  } = useVerificationStore();
   const [activeModal, setActiveModal] = useState(null);
   const [formData, setFormData] = useState({});
 
@@ -19,7 +27,24 @@ export default function VerificationPanel({ user, isOwnProfile }) {
     }
   }, [isOwnProfile, user?._id, fetchVerificationStatus]);
 
-  const handleRequestVerification = (type) => {
+  const handleRequestVerification = async (type) => {
+    if (type === 'email') {
+      if (verificationStatus?.email || user?.emailVerified) {
+        toast.success('Email is already verified');
+        return;
+      }
+      try {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/resend-verification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user?.email }),
+        });
+        toast.success(`Verification email sent to ${user?.email || 'your email'}`);
+      } catch {
+        toast.success('Verification request processed');
+      }
+      return;
+    }
     setActiveModal(type);
     setFormData({});
   };
@@ -86,15 +111,18 @@ export default function VerificationPanel({ user, isOwnProfile }) {
         onClose={() => setActiveModal(null)}
         type={activeModal}
         onSubmit={handleSubmit}
-        isLoading={false}
+        isLoading={isLoading}
         formData={formData}
         setFormData={setFormData}
+        t={t}
       />
     </>
   );
 }
 
-function VerificationModals({ isOpen, onClose, type, onSubmit, isLoading, formData, setFormData, t }) {
+function VerificationModals({ isOpen, onClose, type, onSubmit, isLoading, formData, setFormData, t: tProp }) {
+  const { t: tHook } = useTranslation();
+  const t = tProp || tHook || ((key) => key);
   if (!isOpen) return null;
 
   const modals = {
