@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useReviewStore } from '../store/reviewStore';
 import { useChatStore } from '../store/chatStore';
-import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2, Zap, Mail, Globe } from 'lucide-react';
+import { MapPin, Star, Edit3, MessageCircle, Trophy, Medal, Target, Flame, Gem, Crown, Rocket, Camera, Upload, Trash2, Zap, Mail, Globe, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../components/Avatar';
 import VerificationPanel from '../components/VerificationPanel';
+import SessionScheduler from '../components/SessionScheduler';
 import { useTranslation } from 'react-i18next';
 
 const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
@@ -27,6 +28,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [showBooking, setShowBooking] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
@@ -255,12 +257,20 @@ export default function Profile() {
                   <Edit3 className="w-4 h-4" /> {isEditing ? t('Cancel') : t('Edit Profile')}
                 </button>
               ) : (
-                <button
-                  onClick={handleStartChat}
-                  className="self-start sm:self-auto px-6 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" /> {t('Message')}
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <button
+                    onClick={() => setShowBooking(true)}
+                    className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" /> {t('Book Session')}
+                  </button>
+                  <button
+                    onClick={handleStartChat}
+                    className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" /> {t('Message')}
+                  </button>
+                </div>
               )}
             </div>
             <p className="mt-3 text-gray-600 dark:text-gray-400">{profile.bio || t('No bio yet')}</p>
@@ -510,6 +520,17 @@ export default function Profile() {
             <Trash2 className="w-4 h-4" /> {t('Delete Account')}
           </button>
         </div>
+      )}
+
+      {/* Booking Modal */}
+      {showBooking && profile && (
+        <SessionScheduler
+          isOpen={showBooking}
+          onClose={() => setShowBooking(false)}
+          mentor={profile}
+          skills={safeSkills.filter(s => s.type === 'teach')}
+          currentUser={currentUser}
+        />
       )}
     </div>
   );

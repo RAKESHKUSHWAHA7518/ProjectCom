@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSkillStore } from '../store/skillStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function SessionScheduler({ isOpen, onClose, mentor, skill, skills = [], currentUser }) {
+  const mySkills = useSkillStore((state) => state.skills);
+  const myLearnSkills = mySkills.filter((s) => s.type === 'learn');
+
   const [availableSkills, setAvailableSkills] = useState(skills || []);
   const [selectedSkill, setSelectedSkill] = useState(skill || (skills && skills[0]) || null);
   const [date, setDate] = useState('');
@@ -15,43 +19,56 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, skill
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1); // 1: Select Skill & Time, 2: Confirm
 
-  // Sync available skills when props change or fetch fallback from mentor's profile
+  // Sync available skills when props change and fetch mentor's complete teach skills
   React.useEffect(() => {
+    let isMounted = true;
+
+    // Immediately load provided skills
     if (skills && skills.length > 0) {
       setAvailableSkills(skills);
       setSelectedSkill((prev) => {
         if (prev && skills.some((s) => s._id === prev._id)) return prev;
         return skill || skills[0];
       });
-    } else if (mentor?._id) {
+    } else if (skill) {
+      setAvailableSkills([skill]);
+      setSelectedSkill(skill);
+    }
+
+    // Always fetch complete list of skills the mentor teaches to give full choice
+    if (mentor?._id) {
       fetch(`${API_URL}/users/${mentor._id}`, {
         headers: currentUser?.token ? { Authorization: `Bearer ${currentUser.token}` } : {},
       })
         .then((res) => res.json())
         .then((data) => {
+          if (!isMounted) return;
           const teach = (data.skills || []).filter((s) => s.type === 'teach');
           if (teach.length > 0) {
             setAvailableSkills(teach);
             setSelectedSkill((prev) => {
               if (prev && teach.some((s) => s._id === prev._id)) return prev;
-              return skill || teach[0];
+              if (skill && teach.some((s) => s._id === skill._id)) return skill;
+              // Check if any of mentor's skills match the user's learning goals
+              const matchedGoal = teach.find((ts) =>
+                myLearnSkills.some(
+                  (ls) =>
+                    ls.name.toLowerCase() === ts.name.toLowerCase() ||
+                    ts.name.toLowerCase().includes(ls.name.toLowerCase()) ||
+                    ls.name.toLowerCase().includes(ts.name.toLowerCase())
+                )
+              );
+              return matchedGoal || teach[0];
             });
-          } else if (skill) {
-            setAvailableSkills([skill]);
-            setSelectedSkill(skill);
           }
         })
-        .catch(() => {
-          if (skill) {
-            setAvailableSkills([skill]);
-            setSelectedSkill(skill);
-          }
-        });
-    } else if (skill) {
-      setAvailableSkills([skill]);
-      setSelectedSkill(skill);
+        .catch(() => {});
     }
-  }, [mentor, skill, skills, currentUser]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mentor, skill, skills, currentUser, myLearnSkills]);
 
   const handleSubmit = async () => {
     if (!selectedSkill?._id) {
@@ -180,9 +197,21 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, skill
                                   <span className="font-semibold text-sm truncate">{s.name}</span>
                                   {isSelected && <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />}
                                 </div>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                  {s.category || 'General'}
-                                </p>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                    {s.category || 'General'}
+                                  </p>
+                                  {myLearnSkills.some(
+                                    (ls) =>
+                                      ls.name.toLowerCase() === s.name.toLowerCase() ||
+                                      s.name.toLowerCase().includes(ls.name.toLowerCase()) ||
+                                      ls.name.toLowerCase().includes(s.name.toLowerCase())
+                                  ) && (
+                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                      <Sparkles className="w-2.5 h-2.5" /> Matches your goal
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               {s.proficiencyLevel && (
                                 <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
@@ -204,9 +233,21 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, skill
                             🎓
                           </div>
                           <div>
-                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                              {selectedSkill?.name || 'Skill Exchange'}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                                {selectedSkill?.name || 'Skill Exchange'}
+                              </span>
+                              {selectedSkill && myLearnSkills.some(
+                                (ls) =>
+                                  ls.name.toLowerCase() === selectedSkill.name.toLowerCase() ||
+                                  selectedSkill.name.toLowerCase().includes(ls.name.toLowerCase()) ||
+                                  ls.name.toLowerCase().includes(selectedSkill.name.toLowerCase())
+                              ) && (
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                                  <Sparkles className="w-2.5 h-2.5" /> Matches your goal
+                                </span>
+                              )}
+                            </div>
                             {selectedSkill?.category && (
                               <p className="text-xs text-gray-400 dark:text-gray-500">{selectedSkill.category}</p>
                             )}

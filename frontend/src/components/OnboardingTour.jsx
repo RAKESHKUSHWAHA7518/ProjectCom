@@ -108,7 +108,7 @@ export default function OnboardingTour() {
     },
     {
       target: '#tour-sessions',
-      content: 'Manage all your upcoming and past sessions here. You can accept pending requests or check their status.',
+      content: 'Manage all your pending, completed, and uncompleted sessions here. You can accept pending requests or check their status.',
       placement: 'left',
     },
     {

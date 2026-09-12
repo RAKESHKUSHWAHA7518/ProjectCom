@@ -14,7 +14,7 @@ export default function Sessions() {
   const { user } = useAuthStore();
   const { sessions, fetchSessions, updateSessionStatus, addSessionNote, isLoading } = useSessionStore();
   const { myGivenReviews, fetchMyGivenReviews, createReview } = useReviewStore();
-  const [filter, setFilter] = useState('upcoming'); // 'upcoming', 'past', 'pending'
+  const [filter, setFilter] = useState('pending'); // 'pending', 'completed', 'uncompleted'
   const [activeNoteSession, setActiveNoteSession] = useState(null);
   const [noteContent, setNoteContent] = useState('');
   const [reviewSession, setReviewSession] = useState(null);
@@ -64,10 +64,9 @@ export default function Sessions() {
   };
 
   const filteredSessions = sessions.filter(s => {
-    const isPast = new Date(s.scheduledAt) < new Date();
-    if (filter === 'upcoming') return !isPast && (s.status === 'accepted' || s.status === 'pending');
-    if (filter === 'past') return isPast || s.status === 'completed' || s.status === 'cancelled';
     if (filter === 'pending') return s.status === 'pending';
+    if (filter === 'completed') return s.status === 'completed';
+    if (filter === 'uncompleted') return s.status !== 'completed' && s.status !== 'pending';
     return true;
   });
 
@@ -79,20 +78,42 @@ export default function Sessions() {
           <p className="text-gray-500 dark:text-gray-400 mt-1">{t('Manage your learning')}</p>
         </div>
 
-        <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-          {['upcoming', 'pending', 'past'].map((f) => (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => navigate('/explore')}
+            className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition flex items-center gap-1.5 shadow-primary-600/20 shadow-md"
+          >
+            + {t('Book Session')}
+          </button>
+
+          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          {[
+            { key: 'pending', count: sessions.filter(s => s.status === 'pending').length },
+            { key: 'completed', count: sessions.filter(s => s.status === 'completed').length },
+            { key: 'uncompleted', count: sessions.filter(s => s.status !== 'completed' && s.status !== 'pending').length }
+          ].map(({ key, count }) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition ${
-                filter === f
+              key={key}
+              onClick={() => setFilter(key)}
+              className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition flex items-center gap-2 ${
+                filter === key
                   ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              {t(f)}
+              <span>{t(key)}</span>
+              {count > 0 && (
+                <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
+                  filter === key
+                    ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                }`}>
+                  {count}
+                </span>
+              )}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
@@ -106,10 +127,18 @@ export default function Sessions() {
             <Calendar className="w-10 h-10 text-gray-300 dark:text-gray-600" />
           </div>
           <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            {filter === 'upcoming' ? t('No upcoming sessions') : filter === 'pending' ? t('No pending sessions') : t('No past sessions')}
+            {filter === 'pending'
+              ? t('No pending sessions')
+              : filter === 'completed'
+              ? t('No completed sessions')
+              : t('No uncompleted sessions')}
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mt-2">
-            {filter === 'upcoming' ? t("You don't have any sessions scheduled yet.") : t("No session history found.")}
+            {filter === 'pending'
+              ? t('You have no pending session requests.')
+              : filter === 'completed'
+              ? t("You haven't completed any sessions yet.")
+              : t("You don't have any uncompleted sessions.")}
           </p>
           <button
             onClick={() => navigate('/explore')}
