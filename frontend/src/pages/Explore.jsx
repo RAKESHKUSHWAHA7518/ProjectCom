@@ -27,6 +27,7 @@ export default function Explore() {
   const [showBooking, setShowBooking] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
+  const [selectedMentorSkills, setSelectedMentorSkills] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState('');
 
   const fetchExplore = async () => {
@@ -76,7 +77,8 @@ export default function Explore() {
 
   const handleOpenBooking = (mentor, skills) => {
     setSelectedMentor(mentor);
-    setSelectedSkillForBooking(skills[0]); // Default to first skill
+    setSelectedMentorSkills(skills || []);
+    setSelectedSkillForBooking(skills?.[0] || null);
     setShowBooking(true);
   };
 
@@ -317,12 +319,13 @@ export default function Explore() {
       )}
 
       {/* Booking Modal */}
-      {showBooking && selectedMentor && selectedSkillForBooking && (
+      {showBooking && selectedMentor && (
         <SessionScheduler
           isOpen={showBooking}
           onClose={() => setShowBooking(false)}
           mentor={selectedMentor}
           skill={selectedSkillForBooking}
+          skills={selectedMentorSkills}
           currentUser={user}
         />
       )}

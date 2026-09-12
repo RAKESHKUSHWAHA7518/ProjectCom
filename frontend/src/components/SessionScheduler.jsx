@@ -6,14 +6,58 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-export default function SessionScheduler({ isOpen, onClose, mentor, skill, currentUser }) {
+export default function SessionScheduler({ isOpen, onClose, mentor, skill, skills = [], currentUser }) {
+  const [availableSkills, setAvailableSkills] = useState(skills || []);
+  const [selectedSkill, setSelectedSkill] = useState(skill || (skills && skills[0]) || null);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [step, setStep] = useState(1); // 1: Select Time, 2: Confirm
+  const [step, setStep] = useState(1); // 1: Select Skill & Time, 2: Confirm
+
+  // Sync available skills when props change or fetch fallback from mentor's profile
+  React.useEffect(() => {
+    if (skills && skills.length > 0) {
+      setAvailableSkills(skills);
+      setSelectedSkill((prev) => {
+        if (prev && skills.some((s) => s._id === prev._id)) return prev;
+        return skill || skills[0];
+      });
+    } else if (mentor?._id) {
+      fetch(`${API_URL}/users/${mentor._id}`, {
+        headers: currentUser?.token ? { Authorization: `Bearer ${currentUser.token}` } : {},
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          const teach = (data.skills || []).filter((s) => s.type === 'teach');
+          if (teach.length > 0) {
+            setAvailableSkills(teach);
+            setSelectedSkill((prev) => {
+              if (prev && teach.some((s) => s._id === prev._id)) return prev;
+              return skill || teach[0];
+            });
+          } else if (skill) {
+            setAvailableSkills([skill]);
+            setSelectedSkill(skill);
+          }
+        })
+        .catch(() => {
+          if (skill) {
+            setAvailableSkills([skill]);
+            setSelectedSkill(skill);
+          }
+        });
+    } else if (skill) {
+      setAvailableSkills([skill]);
+      setSelectedSkill(skill);
+    }
+  }, [mentor, skill, skills, currentUser]);
 
   const handleSubmit = async () => {
+    if (!selectedSkill?._id) {
+      toast.error('Please select a skill to learn');
+      return;
+    }
     if (!date || !time) {
       toast.error('Please select date and time');
       return;
@@ -30,7 +74,7 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
         },
         body: JSON.stringify({
           mentorId: mentor._id,
-          skillId: skill._id,
+          skillId: selectedSkill._id,
           scheduledAt,
           notes,
         }),
@@ -87,10 +131,15 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">
                 🎓
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-primary-200 font-medium uppercase tracking-wider">Learning Skill</p>
-                <p className="font-semibold">{skill.name}</p>
+                <p className="font-semibold text-white truncate">{selectedSkill?.name || 'Select a skill'}</p>
               </div>
+              {selectedSkill?.proficiencyLevel && (
+                <span className="text-xs px-2.5 py-1 bg-white/20 text-white rounded-lg capitalize shrink-0 font-medium">
+                  {selectedSkill.proficiencyLevel}
+                </span>
+              )}
             </div>
           </div>
 
@@ -98,6 +147,80 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <div className="space-y-4">
+                  {/* Skill Selector */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Choose Skill to Learn
+                      </label>
+                      {availableSkills.length > 1 && (
+                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                          {availableSkills.length} skills available
+                        </span>
+                      )}
+                    </div>
+
+                    {availableSkills.length > 1 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-0.5">
+                        {availableSkills.map((s) => {
+                          const isSelected = selectedSkill?._id === s._id;
+                          return (
+                            <button
+                              key={s._id}
+                              type="button"
+                              onClick={() => setSelectedSkill(s)}
+                              className={`p-3 rounded-xl text-left transition-all border flex items-center justify-between gap-2 ${
+                                isSelected
+                                  ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-500 ring-2 ring-primary-500/20 text-primary-900 dark:text-primary-100 shadow-sm'
+                                  : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-semibold text-sm truncate">{s.name}</span>
+                                  {isSelected && <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />}
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  {s.category || 'General'}
+                                </p>
+                              </div>
+                              {s.proficiencyLevel && (
+                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                                  isSelected
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                                }`}>
+                                  {s.proficiencyLevel}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm">
+                            🎓
+                          </div>
+                          <div>
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                              {selectedSkill?.name || 'Skill Exchange'}
+                            </span>
+                            {selectedSkill?.category && (
+                              <p className="text-xs text-gray-400 dark:text-gray-500">{selectedSkill.category}</p>
+                            )}
+                          </div>
+                        </div>
+                        {selectedSkill?.proficiencyLevel && (
+                          <span className="text-xs px-2.5 py-1 bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 rounded-lg font-medium capitalize">
+                            {selectedSkill.proficiencyLevel}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Select Date</label>
                     <div className="relative">
@@ -137,7 +260,7 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
 
                   <button
                     onClick={() => setStep(2)}
-                    disabled={!date || !time}
+                    disabled={!date || !time || !selectedSkill?._id}
                     className="w-full py-4 bg-primary-600 text-white rounded-2xl font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     Next Step <ChevronRight className="w-5 h-5" />
@@ -157,16 +280,22 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, curre
 
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+                    <span className="text-gray-500">Mentor</span>
+                    <span className="font-semibold dark:text-white">{mentor.name}</span>
+                  </div>
+                  <div className="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800">
+                    <span className="text-gray-500">Skill to Learn</span>
+                    <span className="font-semibold text-primary-600 dark:text-primary-400">
+                      {selectedSkill?.name} {selectedSkill?.proficiencyLevel ? `(${selectedSkill.proficiencyLevel})` : ''}
+                    </span>
+                  </div>
+                  <div className="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800">
                     <span className="text-gray-500">Date</span>
                     <span className="font-semibold dark:text-white">{date}</span>
                   </div>
                   <div className="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800">
                     <span className="text-gray-500">Time</span>
                     <span className="font-semibold dark:text-white">{time}</span>
-                  </div>
-                  <div className="flex justify-between p-3 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-500">Mentor</span>
-                    <span className="font-semibold dark:text-white">{mentor.name}</span>
                   </div>
                 </div>
 

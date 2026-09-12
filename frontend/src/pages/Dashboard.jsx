@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [showBooking, setShowBooking] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
+  const [selectedMentorSkills, setSelectedMentorSkills] = useState([]);
   const [personalStats, setPersonalStats] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -51,7 +52,8 @@ export default function Dashboard() {
 
   const handleOpenBooking = (match) => {
     setSelectedMentor(match.user);
-    setSelectedSkillForBooking(match.matchedSkills[0]);
+    setSelectedMentorSkills(match.matchedSkills || []);
+    setSelectedSkillForBooking(match.matchedSkills?.[0] || null);
     setShowBooking(true);
   };
 
@@ -406,12 +408,13 @@ export default function Dashboard() {
       </div>
 
       {/* Booking Modal */}
-      {showBooking && selectedMentor && selectedSkillForBooking && (
+      {showBooking && selectedMentor && (
         <SessionScheduler
           isOpen={showBooking}
           onClose={() => setShowBooking(false)}
           mentor={selectedMentor}
           skill={selectedSkillForBooking}
+          skills={selectedMentorSkills}
           currentUser={user}
         />
       )}
