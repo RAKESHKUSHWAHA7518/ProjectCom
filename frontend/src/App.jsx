@@ -255,7 +255,7 @@ function NotificationBell() {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [fetchNotifications])
 
   // Keyboard navigation - close on Escape
   useEffect(() => {
@@ -699,7 +699,7 @@ function SocketManager() {
     } else {
       disconnectSocket()
     }
-  }, [user])
+  }, [user, addNotification])
 
   return null
 }
@@ -714,7 +714,7 @@ function App() {
 
   useEffect(() => {
     initTheme()
-  }, [])
+  }, [initTheme])
 
   useEffect(() => {
     const handleKeyDown = (e) => {

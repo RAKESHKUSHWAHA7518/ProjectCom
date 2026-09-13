@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle, XCircle, Loader2, Phone, Link2 as LinkedinIco
 import toast from 'react-hot-toast';
 
 export default function VerificationPanel({ user, isOwnProfile }) {
-  // eslint-disable-next-line no-unused-vars
+   
   const { t } = useTranslation();
   const {
     verificationStatus,

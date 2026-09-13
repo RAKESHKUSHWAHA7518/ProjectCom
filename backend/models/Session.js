@@ -26,6 +26,22 @@ const sessionSchema = mongoose.Schema(
       type: Date,
       required: true,
     },
+    duration: {
+      type: Number,
+      default: 45, // duration in minutes
+    },
+    template: {
+      type: String,
+      default: 'standard',
+    },
+    isRecurring: {
+      type: Boolean,
+      default: false,
+    },
+    recurrenceRule: {
+      type: String,
+      default: '',
+    },
     meetingLink: {
       type: String, // WebRTC room ID or external link
     },

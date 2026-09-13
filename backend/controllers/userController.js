@@ -320,3 +320,58 @@ export const deleteAccount = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Block a user
+// @route   POST /api/users/:id/block
+// @access  Private
+export const blockUser = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+    if (targetUserId === req.user.id) {
+      return res.status(400).json({ message: 'You cannot block yourself' });
+    }
+
+    const targetUser = await User.findById(targetUserId);
+    if (!targetUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { blockedUsers: targetUserId },
+    });
+
+    res.json({ message: 'User blocked successfully', blockedUserId: targetUserId });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Unblock a user
+// @route   DELETE /api/users/:id/block
+// @access  Private
+export const unblockUser = async (req, res) => {
+  try {
+    const targetUserId = req.params.id;
+
+    await User.findByIdAndUpdate(req.user.id, {
+      $pull: { blockedUsers: targetUserId },
+    });
+
+    res.json({ message: 'User unblocked successfully', unblockedUserId: targetUserId });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get blocked users list
+// @route   GET /api/users/blocked/all
+// @access  Private
+export const getBlockedUsers = async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.id)
+      .populate('blockedUsers', 'name avatar email');
+    res.json(currentUser?.blockedUsers || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

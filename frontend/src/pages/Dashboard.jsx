@@ -12,6 +12,8 @@ import OnboardingTour from '../components/OnboardingTour';
 import WeeklyChallenges from '../components/WeeklyChallenges';
 import { useTranslation } from 'react-i18next';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuthStore();
@@ -25,8 +27,6 @@ export default function Dashboard() {
   const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
   const [selectedMentorSkills, setSelectedMentorSkills] = useState([]);
   const [personalStats, setPersonalStats] = useState(null);
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     if (refreshUser) refreshUser();

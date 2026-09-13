@@ -47,11 +47,11 @@ export default function Community() {
 
   useEffect(() => {
     fetchCommunities();
-  }, []);
+  }, [fetchCommunities]);
 
   useEffect(() => {
     if (id) fetchCommunityById(id);
-  }, [id]);
+  }, [id, fetchCommunityById]);
 
   const handleCreatePost = (e) => {
     e.preventDefault();

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// eslint-disable-next-line no-unused-vars
+ 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';

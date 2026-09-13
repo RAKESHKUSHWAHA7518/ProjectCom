@@ -37,7 +37,7 @@ export default function VerifyEmail() {
         setStatus('error')
         setErrorMsg('Network error. Please try again.')
       })
-  }, [token])
+  }, [token, navigate])
 
   const handleResend = async (e) => {
     e.preventDefault()

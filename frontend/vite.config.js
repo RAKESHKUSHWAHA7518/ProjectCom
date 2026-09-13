@@ -96,6 +96,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.js',
+    },
     build: {
       sourcemap: true,
     },

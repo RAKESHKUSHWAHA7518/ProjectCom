@@ -27,8 +27,11 @@ async function createAndEmit(req, payload) {
 // @route   POST /api/sessions
 // @access  Private
 export const createSession = async (req, res) => {
+  let creditDeducted = false;
+  const creditsCost = 1;
+
   try {
-    const { mentorId, skillId, scheduledAt, notes } = req.body;
+    const { mentorId, skillId, scheduledAt, notes, duration, template, isRecurring, recurrenceRule } = req.body;
 
     // Check if mentor exists
     const mentor = await User.findById(mentorId);
@@ -41,6 +44,38 @@ export const createSession = async (req, res) => {
       return res.status(400).json({ message: 'You cannot book a session with yourself' });
     }
 
+    // Validate scheduled date
+    const sessionTime = new Date(scheduledAt);
+    if (isNaN(sessionTime.getTime()) || sessionTime < new Date()) {
+      return res.status(400).json({ message: 'Session time must be a valid future date and time' });
+    }
+
+    // Guard against timeslot conflicts / double-booking (within duration buffer)
+    const sessionDuration = Number(duration) || 45;
+    const bufferMs = sessionDuration * 60 * 1000;
+    const conflict = await Session.findOne({
+      mentor: mentorId,
+      status: { $in: ['pending', 'accepted'] },
+      scheduledAt: {
+        $gte: new Date(sessionTime.getTime() - bufferMs),
+        $lte: new Date(sessionTime.getTime() + bufferMs),
+      },
+    });
+    if (conflict) {
+      return res.status(409).json({ message: 'The mentor already has a scheduled session during this time window' });
+    }
+
+    // Atomic credit check & deduction (prevents race condition / double-spending)
+    const updatedLearner = await User.findOneAndUpdate(
+      { _id: req.user.id, skillCredits: { $gte: creditsCost } },
+      { $inc: { skillCredits: -creditsCost } },
+      { returnDocument: 'after' }
+    );
+    if (!updatedLearner) {
+      return res.status(400).json({ message: 'Insufficient skill credits to book this session' });
+    }
+    creditDeducted = true;
+
     const skill = skillId ? await Skill.findById(skillId) : null;
     const skillName = skill?.name || 'Skill Exchange';
 
@@ -48,7 +83,12 @@ export const createSession = async (req, res) => {
       mentor: mentorId,
       learner: req.user.id,
       skill: skillId,
-      scheduledAt,
+      scheduledAt: sessionTime,
+      duration: sessionDuration,
+      template: template || 'standard',
+      isRecurring: Boolean(isRecurring),
+      recurrenceRule: recurrenceRule || '',
+      creditsExchanged: creditsCost,
       notes,
     });
 
@@ -74,6 +114,10 @@ export const createSession = async (req, res) => {
 
     res.status(201).json(session);
   } catch (error) {
+    // Rollback atomic credit deduction on failure
+    if (creditDeducted) {
+      await User.findByIdAndUpdate(req.user.id, { $inc: { skillCredits: creditsCost } }).catch(() => {});
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -109,8 +153,15 @@ export const updateSessionStatus = async (req, res) => {
 
     const { status } = req.body;
 
+    const isMentor = session.mentor.toString() === req.user.id;
+    const isLearner = session.learner.toString() === req.user.id;
+
+    if (!isMentor && !isLearner && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to update this session' });
+    }
+
     // Authorization: Only mentor can accept, either can cancel
-    if (status === 'accepted' && session.mentor.toString() !== req.user.id) {
+    if (status === 'accepted' && !isMentor) {
       return res.status(403).json({ message: 'Only mentors can accept sessions' });
     }
 
@@ -118,7 +169,14 @@ export const updateSessionStatus = async (req, res) => {
     session.status = status;
     await session.save();
 
-    // If marking as completed for the first time, update user stats
+    // If cancelling before completion, refund learner's deducted credits
+    if (status === 'cancelled' && oldStatus !== 'cancelled' && oldStatus !== 'completed') {
+      await User.findByIdAndUpdate(session.learner, {
+        $inc: { skillCredits: session.creditsExchanged || 1 },
+      }).catch(() => {});
+    }
+
+    // If marking as completed for the first time, update user stats & transfer credits to mentor
     if (status === 'completed' && oldStatus !== 'completed') {
       const mentor = await User.findById(session.mentor);
       const learner = await User.findById(session.learner);
@@ -131,9 +189,6 @@ export const updateSessionStatus = async (req, res) => {
 
       if (learner) {
         learner.totalSessionsAsLearner = (learner.totalSessionsAsLearner || 0) + 1;
-        // Learner loses credit, assuming they already paid or pay now
-        // If the system deducts on booking, don't deduct here.
-        // For now, let's just increment the stats.
         await learner.save();
       }
     }

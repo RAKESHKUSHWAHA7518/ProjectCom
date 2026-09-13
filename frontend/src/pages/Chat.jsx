@@ -29,6 +29,7 @@ export default function Chat() {
 
   useEffect(() => {
     fetchConversations();
+    if (!user?._id) return;
     const socket = connectSocket(user._id);
 
     socket.on('new-message', (data) => {
@@ -51,7 +52,7 @@ export default function Chat() {
       socket.off('user-typing');
       socket.off('user-stop-typing');
     };
-  }, [conversationId]);
+  }, [conversationId, user?._id, fetchConversations, addMessage]);
 
   useEffect(() => {
     if (conversationId) {
@@ -66,7 +67,7 @@ export default function Chat() {
         socket.emit('leave-conversation', conversationId);
       };
     }
-  }, [conversationId, conversations.length]);
+  }, [conversationId, conversations, fetchMessages, setActiveConversation]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
