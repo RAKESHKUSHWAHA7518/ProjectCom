@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Calendar, Clock, X, Info, CheckCircle2, ChevronRight, AlertCircle, Sparkles, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSkillStore } from '../store/skillStore';
 
@@ -164,98 +164,81 @@ export default function SessionScheduler({ isOpen, onClose, mentor, skill, skill
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <div className="space-y-4">
-                  {/* Skill Selector */}
+                  {/* Skill Selector Dropdown */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
                         Choose Skill to Learn
                       </label>
-                      {availableSkills.length > 1 && (
+                      {availableSkills.length > 0 && (
                         <span className="text-xs font-medium text-primary-600 dark:text-primary-400">
-                          {availableSkills.length} skills available
+                          {availableSkills.length} {availableSkills.length === 1 ? 'skill' : 'skills'} available
                         </span>
                       )}
                     </div>
 
-                    {availableSkills.length > 1 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-0.5">
-                        {availableSkills.map((s) => {
-                          const isSelected = selectedSkill?._id === s._id;
-                          return (
-                            <button
-                              key={s._id}
-                              type="button"
-                              onClick={() => setSelectedSkill(s)}
-                              className={`p-3 rounded-xl text-left transition-all border flex items-center justify-between gap-2 ${
-                                isSelected
-                                  ? 'bg-primary-50 dark:bg-primary-950/40 border-primary-500 ring-2 ring-primary-500/20 text-primary-900 dark:text-primary-100 shadow-sm'
-                                  : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-semibold text-sm truncate">{s.name}</span>
-                                  {isSelected && <CheckCircle2 className="w-4 h-4 text-primary-600 dark:text-primary-400 shrink-0" />}
-                                </div>
-                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                    {s.category || 'General'}
-                                  </p>
-                                  {myLearnSkills.some(
-                                    (ls) =>
-                                      ls.name.toLowerCase() === s.name.toLowerCase() ||
-                                      s.name.toLowerCase().includes(ls.name.toLowerCase()) ||
-                                      ls.name.toLowerCase().includes(s.name.toLowerCase())
-                                  ) && (
-                                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                                      <Sparkles className="w-2.5 h-2.5" /> Matches your goal
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {s.proficiencyLevel && (
-                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                                  isSelected
-                                    ? 'bg-primary-600 text-white'
-                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                                }`}>
-                                  {s.proficiencyLevel}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
+                    <div className="relative">
+                      <select
+                        value={selectedSkill?._id || ''}
+                        onChange={(e) => {
+                          const skillFound = availableSkills.find((s) => s._id === e.target.value);
+                          if (skillFound) setSelectedSkill(skillFound);
+                        }}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition appearance-none cursor-pointer pr-10"
+                      >
+                        {availableSkills.length === 0 ? (
+                          <option value="">No specific skills listed</option>
+                        ) : (
+                          availableSkills.map((s) => {
+                            const isGoalMatch = myLearnSkills.some(
+                              (ls) =>
+                                ls.name.toLowerCase() === s.name.toLowerCase() ||
+                                s.name.toLowerCase().includes(ls.name.toLowerCase()) ||
+                                ls.name.toLowerCase().includes(s.name.toLowerCase())
+                            );
+                            return (
+                              <option
+                                key={s._id}
+                                value={s._id}
+                                className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white py-1"
+                              >
+                                {s.name}{s.proficiencyLevel ? ` (${s.proficiencyLevel.toUpperCase()})` : ''}{s.category ? ` - ${s.category}` : ''}{isGoalMatch ? ' ⭐ [Matches Goal]' : ''}
+                              </option>
+                            );
+                          })
+                        )}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-gray-400">
+                        <ChevronDown className="w-5 h-5" />
                       </div>
-                    ) : (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-950/50 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm">
-                            🎓
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                                {selectedSkill?.name || 'Skill Exchange'}
-                              </span>
-                              {selectedSkill && myLearnSkills.some(
-                                (ls) =>
-                                  ls.name.toLowerCase() === selectedSkill.name.toLowerCase() ||
-                                  selectedSkill.name.toLowerCase().includes(ls.name.toLowerCase()) ||
-                                  ls.name.toLowerCase().includes(selectedSkill.name.toLowerCase())
-                              ) && (
-                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                                  <Sparkles className="w-2.5 h-2.5" /> Matches your goal
-                                </span>
-                              )}
-                            </div>
-                            {selectedSkill?.category && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500">{selectedSkill.category}</p>
-                            )}
-                          </div>
+                    </div>
+
+                    {/* Selected Skill Quick Info */}
+                    {selectedSkill && (
+                      <div className="mt-2.5 p-3 bg-primary-50/60 dark:bg-primary-950/20 border border-primary-100 dark:border-primary-900/40 rounded-xl flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-primary-900 dark:text-primary-200">
+                            {selectedSkill.name}
+                          </span>
+                          {selectedSkill.proficiencyLevel && (
+                            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 rounded font-medium uppercase text-[10px]">
+                              {selectedSkill.proficiencyLevel}
+                            </span>
+                          )}
+                          {selectedSkill.category && (
+                            <span className="text-gray-500 dark:text-gray-400 hidden sm:inline">
+                              • {selectedSkill.category}
+                            </span>
+                          )}
                         </div>
-                        {selectedSkill?.proficiencyLevel && (
-                          <span className="text-xs px-2.5 py-1 bg-primary-100 dark:bg-primary-950/40 text-primary-700 dark:text-primary-400 rounded-lg font-medium capitalize">
-                            {selectedSkill.proficiencyLevel}
+                        {myLearnSkills.some(
+                          (ls) =>
+                            ls.name.toLowerCase() === selectedSkill.name.toLowerCase() ||
+                            selectedSkill.name.toLowerCase().includes(ls.name.toLowerCase()) ||
+                            ls.name.toLowerCase().includes(selectedSkill.name.toLowerCase())
+                        ) && (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                            <Sparkles className="w-2.5 h-2.5" /> Matches your goal
                           </span>
                         )}
                       </div>
