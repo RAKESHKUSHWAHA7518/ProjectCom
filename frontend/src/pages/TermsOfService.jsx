@@ -1,9 +1,7 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useTranslation } from 'react-i18next';
 
 export default function TermsOfService() {
-  const { t } = useTranslation();
   const lastUpdated = new Date().toLocaleDateString();
 
   return (

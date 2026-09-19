@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { X, Check, ChevronRight } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 const COOKIE_CONSENT_KEY = 'skillswap_cookie_consent';
 
 export default function CookieConsentBanner() {
-  const { t } = useTranslation();
   const [showBanner, setShowBanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -17,13 +15,13 @@ export default function CookieConsentBanner() {
   useEffect(() => {
     const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
     if (!consent) {
-      setShowBanner(true);
+      setTimeout(() => setShowBanner(true), 0);
     } else {
       try {
         const parsed = JSON.parse(consent);
-        setPreferences(parsed);
+        setTimeout(() => setPreferences(parsed), 0);
       } catch {
-        setShowBanner(true);
+        setTimeout(() => setShowBanner(true), 0);
       }
     }
   }, []);
