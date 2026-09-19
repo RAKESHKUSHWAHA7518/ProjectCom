@@ -1,11 +1,22 @@
 import multer from 'multer';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinary from '../config/cloudinary.js';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
-const storage = multer.diskStorage({
-  destination(req, file, cb) { cb(null, 'uploads/'); },
-  filename(req, file, cb) {
-    cb(null, `${req.user._id}-${Date.now()}.tmp`);
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    const userId = req.user?._id || 'unknown';
+    return {
+      folder: 'skillswap/avatars',
+      public_id: `${userId}-${Date.now()}`,
+      allowed_formats: ['jpeg', 'png', 'webp', 'gif'],
+      transformation: [
+        { width: 400, height: 400, crop: 'limit', quality: 'auto:good' },
+        { fetch_format: 'webp' },
+      ],
+    };
   },
 });
 

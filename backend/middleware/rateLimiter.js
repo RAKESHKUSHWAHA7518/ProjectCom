@@ -1,12 +1,41 @@
 import rateLimit from 'express-rate-limit';
+import Redis from 'ioredis';
+import { RedisStore } from 'rate-limit-redis';
 import logger from '../utils/logger.js';
 
 const isProd = process.env.NODE_ENV === 'production';
 
+let redisClient = null;
+if (isProd && process.env.REDIS_URL) {
+  redisClient = new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: 3,
+    retryStrategy: (times) => Math.min(times * 50, 2000),
+    enableReadyCheck: true,
+    lazyConnect: true,
+  });
+
+  redisClient.on('error', (err) => {
+    logger.error('Redis connection error', { error: err.message });
+  });
+
+  redisClient.on('connect', () => {
+    logger.info('Redis connected for rate limiting');
+  });
+}
+
+const getStore = () => {
+  if (redisClient) {
+    return new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+    });
+  }
+  return undefined;
+};
+
 export const createRateLimiter = (options = {}) => {
   const defaultOptions = {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: isProd ? 2000 : 10000, // 2000 in prod, 10000 in dev
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 2000 : 10000,
     message: {
       error: 'Too many requests from this IP, please try again later.',
       retryAfter: '15 minutes',
@@ -28,6 +57,7 @@ export const createRateLimiter = (options = {}) => {
       if (req.path.startsWith('/api/health') || req.path.includes('/login')) return true;
       return false;
     },
+    store: getStore(),
   };
 
   return rateLimit({ ...defaultOptions, ...options });
@@ -48,7 +78,7 @@ export const authLimiter = createRateLimiter({
 });
 
 export const searchLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: isProd ? 120 : 1000,
   message: {
     error: 'Too many search requests, please slow down.',
@@ -57,7 +87,7 @@ export const searchLimiter = createRateLimiter({
 });
 
 export const uploadLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: isProd ? 50 : 500,
   message: {
     error: 'Upload limit reached, please try again later.',
@@ -66,7 +96,7 @@ export const uploadLimiter = createRateLimiter({
 });
 
 export const sessionLimiter = createRateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000,
   max: isProd ? 50 : 1000,
   message: {
     error: 'Too many session booking requests, please try again later.',
@@ -76,10 +106,16 @@ export const sessionLimiter = createRateLimiter({
 });
 
 export const messageLimiter = createRateLimiter({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: isProd ? 120 : 1000,
   message: {
     error: 'Too many messages, please slow down.',
     retryAfter: '1 minute',
   },
 });
+
+export const closeRedis = async () => {
+  if (redisClient) {
+    await redisClient.quit();
+  }
+};
