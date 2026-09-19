@@ -10,6 +10,22 @@ import {
   sendSessionConfirmedEmail,
 } from '../services/emailService.js';
 
+// Helper: save a notification and instantly push it via socket if user is online
+async function createAndEmit(req, payload) {
+  const notif = await Notification.create(payload);
+  try {
+    const io = req.app?.get('io');
+    const onlineUsers = req.app?.get('onlineUsers');
+    const targetId = String(payload.user);
+    if (io && onlineUsers && onlineUsers.has(targetId)) {
+      io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
+    }
+  } catch {
+    // Socket emit failure shouldn't throw
+  }
+  return notif;
+}
+
 // Helper: generate recurring session occurrences from RRULE
 function generateRecurringSessions(baseSession, recurrenceRule, recurrenceEnd, recurrenceId) {
   try {
@@ -184,7 +200,13 @@ export const createSession = async (req, res) => {
       sessionId: session._id,
     }).catch(() => {});
 
-    res.status(201).json({ session: createdSessions[0], allSessions: createdSessions, learnerCredits: updatedLearner.skillCredits });
+    const sessionObj = createdSessions[0]?.toObject ? createdSessions[0].toObject() : createdSessions[0];
+    res.status(201).json({
+      ...sessionObj,
+      session: createdSessions[0],
+      allSessions: createdSessions,
+      learnerCredits: updatedLearner.skillCredits,
+    });
   } catch (error) {
     // Rollback atomic credit deduction on failure
     if (creditDeducted) {

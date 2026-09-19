@@ -6,6 +6,8 @@ import Session from '../models/Session.js';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Notification from '../models/Notification.js';
+import Community from '../models/Community.js';
+import Dispute from '../models/Dispute.js';
 
 // @desc    Update user profile
 // @route   PUT /api/users/profile
@@ -386,6 +388,58 @@ export const getBlockedUsers = async (req, res) => {
     const currentUser = await User.findById(req.user.id)
       .populate('blockedUsers', 'name avatar email');
     res.json(currentUser?.blockedUsers || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Export user data (GDPR/CCPA right to portability)
+// @route   GET /api/users/export
+// @access  Private
+export const exportUserData = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password -refreshTokenHash -emailVerificationToken -emailVerificationExpiry -passwordResetToken -passwordResetExpiry');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const [skills, reviewsGiven, reviewsReceived, sessions, conversations, messages, notifications, communities, disputes] = await Promise.all([
+      Skill.find({ user: req.user.id }).lean(),
+      Review.find({ reviewer: req.user.id }).populate('reviewee', 'name').lean(),
+      Review.find({ reviewee: req.user.id }).populate('reviewer', 'name').lean(),
+      Session.find({ $or: [{ mentor: req.user.id }, { learner: req.user.id }] })
+        .populate('mentor', 'name')
+        .populate('learner', 'name')
+        .populate('skill', 'name')
+        .lean(),
+      Conversation.find({ participants: req.user.id }).populate('participants', 'name avatar').lean(),
+      Message.find({ sender: req.user.id }).populate('conversation').lean(),
+      Notification.find({ user: req.user.id }).lean(),
+      Community.find({ members: req.user.id }).lean(),
+      Dispute.find({ $or: [{ raisedBy: req.user.id }, { againstUser: req.user.id }] })
+        .populate('session')
+        .populate('raisedBy', 'name')
+        .populate('againstUser', 'name')
+        .lean(),
+    ]);
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      user: user.toObject(),
+      skills,
+      reviewsGiven,
+      reviewsReceived,
+      sessions,
+      conversations,
+      messages,
+      notifications,
+      communities,
+      disputes,
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="skillswap-data-export-${Date.now()}.json"`);
+    res.json(exportData);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

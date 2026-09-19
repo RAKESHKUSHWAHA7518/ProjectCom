@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next'
 // Critical-path pages — eager imports
 import Login from './pages/Login'
 import Register from './pages/Register'
+import TermsOfService from './pages/TermsOfService'
+import PrivacyPolicy from './pages/PrivacyPolicy'
 // All other pages — lazy imports for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
 const Explore = React.lazy(() => import('./pages/Explore'))
@@ -36,6 +38,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import SkipLink from './components/SkipLink'
 import EmailVerificationBanner from './components/EmailVerificationBanner'
 import TimezoneBanner from './components/TimezoneBanner'
+import CookieConsentBanner from './components/CookieConsentBanner'
 import './App.css'
 
 // Full-screen loading spinner shown while lazy chunks load
@@ -736,6 +739,7 @@ function App() {
           <SocketManager />
           <EmailVerificationBanner />
           <TimezoneBanner />
+          <CookieConsentBanner />
           <Navbar onSearchClick={() => setIsSearchOpen(true)} />
           <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
           <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" role="main">
@@ -755,6 +759,9 @@ function App() {
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/community" element={user ? <Community /> : <Navigate to="/login" />} />
                 <Route path="/community/:id" element={user ? <Community /> : <Navigate to="/login" />} />
+                {/* Legal pages */}
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
                 {/* New auth / account routes */}
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
