@@ -1,15 +1,12 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { OAuth2Client } from 'google-auth-library';
 import {
   sendVerificationEmail,
   sendWelcomeEmail,
   sendPasswordResetEmail,
   sendPasswordResetConfirmEmail,
 } from '../services/emailService.js';
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy-client-id');
 
 // Generate Access Token (7d for stable persistent sessions and uninterrupted meetings)
 const generateToken = (id) =>
@@ -158,79 +155,7 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// @desc    Authenticate with Google
-// @route   POST /api/auth/google
-// @access  Public
-export const googleLogin = async (req, res) => {
-  try {
-    const { credential } = req.body;
-    let payload;
 
-    if (process.env.GOOGLE_CLIENT_ID) {
-      const ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } else {
-      // For local development without client ID, just decode the JWT to get payload
-      payload = jwt.decode(credential);
-    }
-
-    if (!payload || !payload.email) {
-      return res.status(400).json({ message: 'Invalid Google token' });
-    }
-
-    const { email, name, picture } = payload;
-    let user = await User.findOne({ email });
-    let isNewUser = false;
-
-    if (!user) {
-      isNewUser = true;
-      user = await User.create({
-        name,
-        email,
-        password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
-        avatar: picture || '',
-        emailVerified: true, // Google accounts are pre-verified
-      });
-    } else {
-      if (!user.avatar && picture) {
-        user.avatar = picture;
-        await user.save();
-      }
-    }
-
-    // Generate refresh token, hash it, store atomically
-    const refreshTokenPlain = generateRefreshToken(user._id);
-    const refreshTokenHashed = hashToken(refreshTokenPlain);
-
-    await User.findByIdAndUpdate(user._id, { refreshTokenHash: refreshTokenHashed });
-
-    setTokenCookie(res, refreshTokenPlain);
-
-    // Fire-and-forget welcome email for new users
-    if (isNewUser) {
-      sendWelcomeEmail(user).catch(() => {});
-    }
-
-    const hasSeenTour = !isNewUser && (user.hasSeenTour || user.profileComplete || (user.totalSessionsAsMentor > 0) || (user.totalSessionsAsLearner > 0));
-
-    res.json({
-      _id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      role: user.role,
-      profileComplete: user.profileComplete,
-      skillCredits: user.skillCredits,
-      hasSeenTour: !!hasSeenTour,
-      token: generateToken(user._id),
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
 
 // @desc    Refresh access token using refresh token cookie (with rotation)
 // @route   POST /api/auth/refresh

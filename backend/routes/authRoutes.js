@@ -4,7 +4,6 @@ import {
   registerUser,
   loginUser,
   getUserProfile,
-  googleLogin,
   refreshToken,
   logoutUser,
   verifyEmail,
@@ -47,7 +46,6 @@ const resendVerificationLimiter = rateLimit({
 
 router.post('/register', authLimiter, validateRegister, handleValidationErrors, registerUser);
 router.post('/login', validateLogin, handleValidationErrors, loginUser);
-router.post('/google', authLimiter, googleLogin);
 router.post('/refresh', refreshToken);
 router.post('/logout', logoutUser);
 router.get('/profile', protect, getUserProfile);
