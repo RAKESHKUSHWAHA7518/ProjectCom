@@ -4,6 +4,9 @@ import { adminOnly } from '../middleware/adminMiddleware.js';
 import {
   getUsers, updateUserStatus, getStats, getReports, updateReport
 } from '../controllers/adminController.js';
+import {
+  getAllDisputes, resolveDispute
+} from '../controllers/disputeController.js';
 
 const router = express.Router();
 
@@ -15,5 +18,7 @@ router.patch('/users/:id/status', updateUserStatus);
 router.get('/stats', getStats);
 router.get('/reports', getReports);
 router.patch('/reports/:id', updateReport);
+router.get('/disputes', getAllDisputes);
+router.patch('/disputes/:id', resolveDispute);
 
 export default router;

@@ -2,25 +2,39 @@ import Session from '../models/Session.js';
 import User from '../models/User.js';
 import Skill from '../models/Skill.js';
 import Notification from '../models/Notification.js';
+import { v4 as uuidv4 } from 'uuid';
+import rrule from 'rrule';
+const { RRule } = rrule;
 import {
   sendSessionRequestEmail,
   sendSessionConfirmedEmail,
 } from '../services/emailService.js';
 
-// Helper: save a notification and instantly push it via socket if user is online
-async function createAndEmit(req, payload) {
-  const notif = await Notification.create(payload);
+// Helper: generate recurring session occurrences from RRULE
+function generateRecurringSessions(baseSession, recurrenceRule, recurrenceEnd, recurrenceId) {
   try {
-    const io = req.app?.get('io');
-    const onlineUsers = req.app?.get('onlineUsers');
-    const targetId = String(payload.user);
-    if (io && onlineUsers && onlineUsers.has(targetId)) {
-      io.to(onlineUsers.get(targetId)).emit('new-notification', notif);
-    }
-  } catch {
-    // Socket emit failure shouldn't throw
+    const rule = RRule.fromString(recurrenceRule);
+    const dtstart = new Date(baseSession.scheduledAt);
+    const until = recurrenceEnd ? new Date(recurrenceEnd) : new Date(dtstart.getTime() + 365 * 24 * 60 * 60 * 1000); // Default 1 year
+    
+    rule.options.dtstart = dtstart;
+    rule.options.until = until;
+    
+    const occurrences = rule.all();
+    // Skip the first occurrence (it's the base session)
+    return occurrences.slice(1).map((date, index) => ({
+      ...baseSession,
+      scheduledAt: date,
+      recurrenceId,
+      parentSession: baseSession._id,
+      isRecurring: true,
+      recurrenceRule,
+      recurrenceEnd,
+    }));
+  } catch (error) {
+    console.error('RRULE parse error:', error);
+    return [];
   }
-  return notif;
 }
 
 // @desc    Create a new session request
@@ -31,7 +45,7 @@ export const createSession = async (req, res) => {
   const creditsCost = 1;
 
   try {
-    const { mentorId, skillId, scheduledAt, notes, duration, template, isRecurring, recurrenceRule } = req.body;
+    const { mentorId, skillId, scheduledAt, notes, duration, template, isRecurring, recurrenceRule, recurrenceEnd } = req.body;
 
     // Check if mentor exists
     const mentor = await User.findById(mentorId);
@@ -48,6 +62,14 @@ export const createSession = async (req, res) => {
     const sessionTime = new Date(scheduledAt);
     if (isNaN(sessionTime.getTime()) || sessionTime < new Date()) {
       return res.status(400).json({ message: 'Session time must be a valid future date and time' });
+    }
+
+    // Validate recurrence
+    if (isRecurring && !recurrenceRule) {
+      return res.status(400).json({ message: 'Recurrence rule is required for recurring sessions' });
+    }
+    if (isRecurring && recurrenceEnd && new Date(recurrenceEnd) <= sessionTime) {
+      return res.status(400).json({ message: 'Recurrence end date must be after the first session' });
     }
 
     // Guard against timeslot conflicts / double-booking (within duration buffer)
@@ -78,7 +100,9 @@ export const createSession = async (req, res) => {
 
     const skill = skillId ? await Skill.findById(skillId) : null;
     const skillName = skill?.name || 'Skill Exchange';
+    const recurrenceId = isRecurring ? uuidv4() : null;
 
+    // Create the base session
     const session = await Session.create({
       mentor: mentorId,
       learner: req.user.id,
@@ -88,9 +112,57 @@ export const createSession = async (req, res) => {
       template: template || 'standard',
       isRecurring: Boolean(isRecurring),
       recurrenceRule: recurrenceRule || '',
+      recurrenceEnd: recurrenceEnd ? new Date(recurrenceEnd) : null,
+      recurrenceId,
       creditsExchanged: creditsCost,
       notes,
     });
+
+    // Generate recurring sessions if applicable
+    let createdSessions = [session];
+    if (isRecurring && recurrenceRule) {
+      const recurringSessions = generateRecurringSessions(
+        {
+          mentor: mentorId,
+          learner: req.user.id,
+          skill: skillId,
+          duration: sessionDuration,
+          template: template || 'standard',
+          creditsExchanged: creditsCost,
+          notes,
+        },
+        recurrenceRule,
+        recurrenceEnd,
+        recurrenceId
+      );
+
+      if (recurringSessions.length > 0) {
+        // Check for conflicts for each recurring session
+        const conflictChecks = recurringSessions.map(async (s) => {
+          return Session.findOne({
+            mentor: mentorId,
+            status: { $in: ['pending', 'accepted'] },
+            scheduledAt: {
+              $gte: new Date(s.scheduledAt.getTime() - bufferMs),
+              $lte: new Date(s.scheduledAt.getTime() + bufferMs),
+            },
+          });
+        });
+        const conflicts = await Promise.all(conflictChecks);
+        const hasConflict = conflicts.some(c => c !== null);
+        
+        if (!hasConflict) {
+          const inserted = await Session.insertMany(recurringSessions);
+          createdSessions = [session, ...inserted];
+        } else {
+          // If any conflict, rollback and return error
+          await Session.findByIdAndDelete(session._id);
+          creditDeducted = false;
+          await User.findByIdAndUpdate(req.user.id, { $inc: { skillCredits: creditsCost } });
+          return res.status(409).json({ message: 'One or more recurring sessions conflict with existing bookings' });
+        }
+      }
+    }
 
     // Create real-time in-app notification for mentor
     await createAndEmit(req, {
@@ -112,7 +184,7 @@ export const createSession = async (req, res) => {
       sessionId: session._id,
     }).catch(() => {});
 
-    res.status(201).json(session);
+    res.status(201).json({ session: createdSessions[0], allSessions: createdSessions, learnerCredits: updatedLearner.skillCredits });
   } catch (error) {
     // Rollback atomic credit deduction on failure
     if (creditDeducted) {
@@ -284,6 +356,94 @@ export const addSessionNote = async (req, res) => {
       .populate('sharedNotes.user', 'name avatar');
       
     res.json(updatedSession);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Cancel or update entire recurring series
+// @route   PUT /api/sessions/:id/series
+// @access  Private
+export const updateRecurringSeries = async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+
+    if (!session.recurrenceId) {
+      return res.status(400).json({ message: 'This session is not part of a recurring series' });
+    }
+
+    const { status, cancelFutureOnly } = req.body; // status: 'cancelled', cancelFutureOnly: boolean
+
+    const isMentor = session.mentor.toString() === req.user.id;
+    const isLearner = session.learner.toString() === req.user.id;
+
+    if (!isMentor && !isLearner && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to update this series' });
+    }
+
+    // Find all sessions in the series
+    const query = { recurrenceId: session.recurrenceId };
+    if (cancelFutureOnly) {
+      query.scheduledAt = { $gte: new Date() };
+    }
+    
+    const seriesSessions = await Session.find(query);
+    
+    if (seriesSessions.length === 0) {
+      return res.status(404).json({ message: 'No sessions found in this series' });
+    }
+
+    // Check authorization for all sessions
+    for (const s of seriesSessions) {
+      const isMentor = s.mentor.toString() === req.user.id;
+      const isLearner = s.learner.toString() === req.user.id;
+      if (!isMentor && !isLearner && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Not authorized for all sessions in this series' });
+      }
+    }
+
+    let creditsRefunded = 0;
+    const updatedSessions = [];
+
+    for (const s of seriesSessions) {
+      const oldStatus = s.status;
+      s.status = status || 'cancelled';
+      
+      // Refund credits for cancelled sessions that weren't already cancelled/completed
+      if (s.status === 'cancelled' && oldStatus !== 'cancelled' && oldStatus !== 'completed') {
+        creditsRefunded += s.creditsExchanged || 1;
+      }
+      
+      await s.save();
+      updatedSessions.push(s);
+    }
+
+    // Refund learner credits
+    if (creditsRefunded > 0) {
+      await User.findByIdAndUpdate(session.learner, {
+        $inc: { skillCredits: creditsRefunded },
+      }).catch(() => {});
+    }
+
+    // Notify other party
+    const recipient = session.mentor.toString() === req.user.id ? session.learner : session.mentor;
+    await createAndEmit(req, {
+      user: recipient,
+      relatedUser: req.user.id,
+      type: 'series_cancelled',
+      title: 'Recurring Series Cancelled',
+      message: `${req.user.name} cancelled the recurring session series.`,
+      link: `/sessions`,
+    });
+
+    res.json({ 
+      message: `Series updated: ${updatedSessions.length} sessions ${cancelFutureOnly ? 'from now on' : ''}`, 
+      updatedSessions,
+      creditsRefunded 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

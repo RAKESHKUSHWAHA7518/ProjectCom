@@ -74,6 +74,8 @@ import challengeRoutes from './routes/challengeRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
+import disputeRoutes from './routes/disputeRoutes.js';
+import searchAlertRoutes from './routes/searchAlertRoutes.js';
 
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
@@ -87,10 +89,12 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/search', searchLimiter, searchRoutes); // Search rate limit
+app.use('/api/search/alerts', searchAlertRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/verification', verificationRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // Specific upload limiter for avatar uploads (if separate route exists)
 // app.use('/api/users/avatar', uploadLimiter);

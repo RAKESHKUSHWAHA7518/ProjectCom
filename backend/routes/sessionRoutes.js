@@ -4,6 +4,7 @@ import {
   getMySessions,
   updateSessionStatus,
   addSessionNote,
+  updateRecurringSeries,
 } from '../controllers/sessionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { sessionLimiter } from '../middleware/rateLimiter.js';
@@ -16,6 +17,9 @@ router.route('/')
 
 router.route('/:id')
   .put(protect, updateSessionStatus);
+
+router.route('/:id/series')
+  .put(protect, updateRecurringSeries);
 
 router.route('/:id/notes')
   .post(protect, addSessionNote);

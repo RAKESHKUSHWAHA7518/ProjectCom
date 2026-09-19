@@ -6,14 +6,18 @@ import Notification from '../models/Notification.js';
 export const getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({ user: req.user.id })
-      .populate('relatedUser', 'name avatar')
+      .populate({ path: 'relatedUser', select: 'name avatar', options: { strictPopulate: false } })
       .sort('-createdAt')
       .limit(50);
 
     const unreadCount = await Notification.countDocuments({ user: req.user.id, read: false });
 
-    res.json({ notifications, unreadCount });
+    // Filter out notifications with missing relatedUser (orphaned)
+    const validNotifications = notifications.filter(n => n.relatedUser || n.type === 'system');
+
+    res.json({ notifications: validNotifications, unreadCount });
   } catch (error) {
+    console.error('Get notifications error:', error);
     res.status(500).json({ message: error.message });
   }
 };

@@ -88,6 +88,11 @@ const userSchema = mongoose.Schema(
         type: String,
         default: 'light',
       },
+      // Mentor-specific settings
+      instantBook: { type: Boolean, default: false },
+      hourlyRate: { type: Number, default: 0 },
+      sessionLength: { type: Number, default: 45 }, // minutes
+      languages: { type: [String], default: ['English'] },
     },
     claimedChallenges: {
       type: [String],

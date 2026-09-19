@@ -42,6 +42,17 @@ const sessionSchema = mongoose.Schema(
       type: String,
       default: '',
     },
+    recurrenceEnd: {
+      type: Date,
+    },
+    recurrenceId: {
+      type: String, // UUID to group all sessions in a recurring series
+      index: true,
+    },
+    parentSession: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Session',
+    },
     meetingLink: {
       type: String, // WebRTC room ID or external link
     },

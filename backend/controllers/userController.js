@@ -17,7 +17,7 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { name, bio, location, timezone, availability, socialLinks, avatar } = req.body;
+    const { name, bio, location, timezone, availability, socialLinks, avatar, instantBook, hourlyRate, sessionLength, languages } = req.body;
 
     if (name) user.name = name;
     if (bio !== undefined) user.bio = bio;
@@ -27,6 +27,12 @@ export const updateProfile = async (req, res) => {
     if (socialLinks) user.socialLinks = { ...user.socialLinks, ...socialLinks };
     if (avatar !== undefined) user.avatar = avatar;
     if (req.body.hasSeenTour !== undefined) user.hasSeenTour = req.body.hasSeenTour;
+
+    // Mentor settings
+    if (instantBook !== undefined) user.settings.instantBook = instantBook;
+    if (hourlyRate !== undefined) user.settings.hourlyRate = hourlyRate;
+    if (sessionLength !== undefined) user.settings.sessionLength = sessionLength;
+    if (languages) user.settings.languages = languages;
 
     // Recalculate profile completeness concurrently
     const [teachSkills, learnSkills] = await Promise.all([
@@ -57,6 +63,7 @@ export const updateProfile = async (req, res) => {
       streak: updatedUser.streak,
       badges: updatedUser.badges,
       hasSeenTour: updatedUser.hasSeenTour,
+      settings: updatedUser.settings,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -161,7 +168,7 @@ export const getLeaderboard = async (req, res) => {
 // @access  Private
 export const exploreUsers = async (req, res) => {
   try {
-    const { search, category, minRating, sortBy } = req.query;
+    const { search, category, minRating, sortBy, instantBook, verifiedOnly, minPrice, maxPrice, sessionLength, language } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
@@ -190,11 +197,30 @@ export const exploreUsers = async (req, res) => {
     if (minRating) {
       userQuery.rating = { $gte: parseFloat(minRating) };
     }
+    if (instantBook === 'true') {
+      userQuery['settings.instantBook'] = true;
+    }
+    if (verifiedOnly === 'true') {
+      userQuery['verification.email'] = true;
+    }
+    if (minPrice || maxPrice) {
+      userQuery['settings.hourlyRate'] = {};
+      if (minPrice) userQuery['settings.hourlyRate'].$gte = parseFloat(minPrice);
+      if (maxPrice) userQuery['settings.hourlyRate'].$lte = parseFloat(maxPrice);
+    }
+    if (sessionLength) {
+      userQuery['settings.sessionLength'] = parseInt(sessionLength);
+    }
+    if (language) {
+      userQuery['settings.languages'] = { $regex: language, $options: 'i' };
+    }
 
     let sortOption = { createdAt: -1 };
     if (sortBy === 'rating') sortOption = { rating: -1 };
     if (sortBy === 'reviews') sortOption = { numReviews: -1 };
     if (sortBy === 'sessions') sortOption = { totalSessionsAsMentor: -1 };
+    if (sortBy === 'price_asc') sortOption = { 'settings.hourlyRate': 1 };
+    if (sortBy === 'price_desc') sortOption = { 'settings.hourlyRate': -1 };
 
     // Run count and find queries concurrently
     const [totalCount, users] = await Promise.all([

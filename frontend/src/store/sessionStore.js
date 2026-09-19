@@ -38,17 +38,19 @@ export const useSessionStore = create((set) => ({
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      set((state) => ({ sessions: [data, ...state.sessions], isLoading: false }));
+      set((state) => ({ sessions: [data.session, ...state.sessions], isLoading: false }));
 
-      // Deduct credit locally
-      const authStore = useAuthStore.getState();
-      if (authStore.user) {
-        const updatedUser = { ...authStore.user, skillCredits: (authStore.user.skillCredits || 0) - 1 };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        useAuthStore.setState({ user: updatedUser });
+      // Update credits from server response (server-side atomic deduction)
+      if (data.learnerCredits !== undefined) {
+        const authStore = useAuthStore.getState();
+        if (authStore.user) {
+          const updatedUser = { ...authStore.user, skillCredits: data.learnerCredits };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          useAuthStore.setState({ user: updatedUser });
+        }
       }
 
-      return data;
+      return data.session;
     } catch (error) {
       set({ error: error.message, isLoading: false });
       throw error;

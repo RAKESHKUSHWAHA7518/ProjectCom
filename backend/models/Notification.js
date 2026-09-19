@@ -20,6 +20,10 @@ const notificationSchema = mongoose.Schema(
         'badge_earned',
         'credit_received',
         'system',
+        'dispute_raised',
+        'dispute_resolved',
+        'series_cancelled',
+        'search_alert',
       ],
     },
     title: {
