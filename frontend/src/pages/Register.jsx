@@ -10,6 +10,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState(1); // 1: Account details, 2: Skills
   const [selectedTeachSkills, setSelectedTeachSkills] = useState([]);
@@ -19,13 +20,37 @@ export default function Register() {
   const { register, error, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
+  const MIN_AGE = 13;
+
+  const calculateAge = (dob) => {
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const validateAge = (dob) => {
+    if (!dob) return false;
+    return calculateAge(dob) >= MIN_AGE;
+  };
+
   const popularTeachSkills = ['JavaScript', 'Python', 'React', 'Node.js', 'TypeScript', 'SQL', 'AWS', 'Docker', 'Git', 'REST APIs'];
   const popularLearnSkills = ['JavaScript', 'Python', 'React', 'Machine Learning', 'Data Science', 'UI/UX Design', 'Spanish', 'French', 'Guitar', 'Photography'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (step === 1) {
-      if (!name || !email || !password) return;
+      if (!name || !email || !password || !dateOfBirth) return;
+      if (!validateAge(dateOfBirth)) {
+        import('react-hot-toast').then(module => {
+          module.default.error(`${t('You must be at least')} ${MIN_AGE} ${t('years old to register')}`);
+        });
+        return;
+      }
       try {
         const data = await register(name, email, password);
         if (data && data.message) {
@@ -147,6 +172,22 @@ export default function Register() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{t('Date of Birth')}</label>
+                <input
+                  type="date"
+                  required
+                  value={dateOfBirth}
+                  onChange={e => setDateOfBirth(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-primary-500 focus:border-primary-500"
+                />
+                {!validateAge(dateOfBirth) && dateOfBirth && (
+                  <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                    {t('You must be at least')} {MIN_AGE} {t('years old to register')}
+                  </p>
+                )}
               </div>
             </div>
             <button disabled={isLoading} type="submit" className="w-full px-4 py-2 font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">

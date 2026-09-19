@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, LayoutDashboard, CalendarDays, MessageCircle, Trophy, Globe,
   Bell, User, LogOut, Menu, X, ArrowRight, Sparkles, Video, Award,
-  RefreshCw, Sun, Moon, Users, BookOpen, Zap,
+  Sun, Moon,
 } from 'lucide-react'
 import { useAuthStore } from './store/authStore'
 import { useNotificationStore } from './store/notificationStore'
@@ -18,6 +18,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import TermsOfService from './pages/TermsOfService'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import LandingPage from './pages/LandingPage'
 // All other pages — lazy imports for code splitting
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
 const Explore = React.lazy(() => import('./pages/Explore'))
@@ -66,20 +67,6 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 /* ============================================================
    ANIMATION VARIANTS
    ============================================================ */
-const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, delay: i * 0.1, ease: [0.25, 0.46, 0.45, 0.94] },
-  }),
-}
-
-const staggerContainer = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.12 } },
-}
-
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.92 },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.25, ease: 'easeOut' } },
@@ -90,161 +77,6 @@ const slideDown = {
   hidden: { opacity: 0, height: 0 },
   visible: { opacity: 1, height: 'auto', transition: { duration: 0.25, ease: 'easeOut' } },
   exit: { opacity: 0, height: 0, transition: { duration: 0.2 } },
-}
-
-/* ============================================================
-   HOME / HERO SECTION
-   ============================================================ */
-function Home() {
-  const { t } = useTranslation()
-  const [stats, setStats] = useState(null)
-
-  useEffect(() => {
-    fetch(`${API_BASE}/stats`)
-      .then((r) => r.json())
-      .then((data) => setStats(data))
-      .catch(() => { })
-  }, [])
-
-  const features = [
-    {
-      icon: RefreshCw,
-      title: t('Barter Skills'),
-      desc: t('Barter Desc'),
-      color: 'text-blue-500',
-      bg: 'bg-blue-50 dark:bg-blue-950/40',
-    },
-    {
-      icon: Video,
-      title: t('Live Video'),
-      desc: t('Video Desc'),
-      color: 'text-violet-500',
-      bg: 'bg-violet-50 dark:bg-violet-950/40',
-    },
-    {
-      icon: Award,
-      title: t('Earn Grow'),
-      desc: t('Earn Desc'),
-      color: 'text-amber-500',
-      bg: 'bg-amber-50 dark:bg-amber-950/40',
-    },
-  ]
-
-  const statItems = stats
-    ? [
-      { label: 'Active Users', value: stats.totalUsers, icon: Users },
-      { label: 'Skills Listed', value: stats.totalSkills, icon: BookOpen },
-      { label: 'Sessions Done', value: stats.totalSessions, icon: Zap },
-      { label: 'Communities', value: stats.totalCommunities, icon: Globe },
-    ]
-    : []
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[85vh] px-4 pt-12 pb-20 text-center relative overflow-hidden">
-      {/* Floating gradient orbs */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-primary-400/25 to-indigo-400/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute top-1/3 -right-24 w-80 h-80 bg-gradient-to-br from-accent-400/20 to-purple-400/15 rounded-full blur-3xl animate-float-reverse" />
-        <div className="absolute -bottom-24 left-1/3 w-72 h-72 bg-gradient-to-br from-cyan-400/15 to-blue-400/10 rounded-full blur-3xl animate-float-slow" />
-      </div>
-
-      {/* Hero heading */}
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
-        className="relative max-w-4xl"
-      >
-        <motion.h1
-          variants={fadeInUp}
-          custom={0}
-          className="text-4xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight leading-[1.1]"
-        >
-          <span className="text-gray-900 dark:text-white">{t('Exchange Skills')}</span>{' '}
-          <span className="bg-gradient-to-r from-primary-500 via-indigo-500 to-accent-500 bg-clip-text text-transparent">
-            {t('Grow Together')}
-          </span>
-        </motion.h1>
-
-        <motion.p
-          variants={fadeInUp}
-          custom={1}
-          className="mt-6 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-gray-400 leading-relaxed"
-        >
-          {t('Hero Description')}
-        </motion.p>
-
-        {/* CTA buttons */}
-        <motion.div variants={fadeInUp} custom={2} className="flex flex-wrap justify-center gap-4 mt-10">
-          <Link
-            to="/explore"
-            className="group inline-flex items-center gap-2 px-8 py-3.5 font-semibold text-white rounded-2xl bg-gradient-to-r from-primary-600 via-indigo-600 to-accent-600 shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all duration-300"
-          >
-            <Sparkles className="w-5 h-5" />
-            {t('Explore Skills')}
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-2 px-8 py-3.5 font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-750 shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            {t('Join the Community')}
-          </Link>
-        </motion.div>
-      </motion.div>
-
-      {/* Stats strip */}
-      {stats && (
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="mt-20 w-full max-w-3xl grid grid-cols-2 sm:grid-cols-4 gap-4"
-        >
-          {statItems.map((s, i) => (
-            <motion.div
-              key={s.label}
-              variants={fadeInUp}
-              custom={i}
-              className="glass-card rounded-2xl px-5 py-5 text-center hover:shadow-elevated transition-all duration-300"
-            >
-              <s.icon className="w-5 h-5 mx-auto mb-2 text-primary-500 dark:text-primary-400" />
-              <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
-                {s.value.toLocaleString()}
-              </div>
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1 uppercase tracking-wider">
-                {s.label}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
-
-      {/* Feature cards */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: '-60px' }}
-        variants={staggerContainer}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 w-full max-w-4xl"
-      >
-        {features.map((f, i) => (
-          <motion.div
-            key={i}
-            variants={fadeInUp}
-            custom={i}
-            className="group glass-card rounded-2xl p-7 text-left hover:shadow-float hover:-translate-y-1.5 transition-all duration-300 cursor-default"
-          >
-            <div className={`w-12 h-12 rounded-xl ${f.bg} flex items-center justify-center mb-5`}>
-              <f.icon className={`w-6 h-6 ${f.color}`} strokeWidth={2} />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{f.title}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-    </div>
-  )
 }
 
 /* ============================================================
@@ -745,7 +577,7 @@ function App() {
           <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full" role="main">
             <React.Suspense fallback={<PageLoader />}>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/explore" element={user ? <Explore /> : <Navigate to="/login" />} />
                 <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
                 <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />

@@ -49,10 +49,22 @@ const clearTokenCookie = (res) => {
 // @access  Public
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, dateOfBirth } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Please add all fields' });
+    if (!name || !email || !password || !dateOfBirth) {
+      return res.status(400).json({ message: 'Please add all fields including date of birth' });
+    }
+
+    // Age validation (minimum 13 years)
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (age < 13) {
+      return res.status(400).json({ message: 'You must be at least 13 years old to register' });
     }
 
     const userExists = await User.findOne({ email });
