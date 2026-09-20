@@ -1,32 +1,168 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useSkillStore } from '../store/skillStore';
 import { useSessionStore } from '../store/sessionStore';
 import { CATEGORIES, SKILLS_BY_CATEGORY } from '../data/skillsData';
 import toast from 'react-hot-toast';
-import { Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X, Star, Zap, ArrowRight, Heart, BarChart2, Sparkles, TrendingUp, Target, Clock, Users, Award, BookOpen, User } from 'lucide-react';
+import {
+  Search, MessageCircle, Trophy, Globe, Calendar, Coins, Check, X,
+  Star, Zap, ArrowRight, BarChart2, Sparkles, TrendingUp, Target,
+  Clock, Users, Award, BookOpen, User, ChevronDown, Plus, ArrowUpRight,
+  Layers, Video, CheckCircle
+} from 'lucide-react';
 import Avatar from '../components/Avatar';
 import SessionScheduler from '../components/SessionScheduler';
 import OnboardingTour from '../components/OnboardingTour';
 import WeeklyChallenges from '../components/WeeklyChallenges';
-import { useTranslation } from 'react-i18next';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+/* ─── Stat card ─── */
+function StatCard({ stat }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`w-10 h-10 rounded-xl ${stat.bg} flex items-center justify-center`}>
+          <stat.icon className={`w-5 h-5 ${stat.iconColor}`} strokeWidth={2} />
+        </div>
+        <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${stat.badgeBg} ${stat.badgeText}`}>
+          {stat.badge}
+        </span>
+      </div>
+      <p className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight leading-none mb-1">
+        {stat.value}
+      </p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
+    </div>
+  );
+}
+
+/* ─── Session row ─── */
+function SessionRow({ session, userId, onAccept, onReject, onJoin }) {
+  const isMentor = session.mentor?._id === userId;
+  const other = isMentor ? session.learner : session.mentor;
+
+  const statusMap = {
+    completed: { label: 'Completed', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' },
+    pending:   { label: 'Pending',   cls: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
+    accepted:  { label: 'Accepted',  cls: 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400' },
+    cancelled: { label: 'Cancelled', cls: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' },
+    rejected:  { label: 'Rejected',  cls: 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' },
+  };
+  const st = statusMap[session.status] || statusMap.pending;
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
+      {/* Avatar */}
+      <div className="relative shrink-0">
+        <Avatar src={other?.avatar} name={other?.name} size="sm" className="rounded-xl shadow-sm" />
+        <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${
+          session.status === 'accepted' ? 'bg-blue-500' :
+          session.status === 'completed' ? 'bg-emerald-500' :
+          session.status === 'pending' ? 'bg-amber-400' : 'bg-gray-400'
+        }`} />
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{other?.name || '—'}</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 truncate flex items-center gap-1">
+          <BookOpen className="w-3 h-3 shrink-0" />
+          {session.skill?.name || 'Skill session'} · {new Date(session.scheduledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </p>
+      </div>
+
+      {/* Status + actions */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wide ${st.cls}`}>
+          {st.label}
+        </span>
+        {session.status === 'pending' && isMentor && (
+          <>
+            <button onClick={() => onAccept(session._id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-lg transition-colors" title="Accept">
+              <Check className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onReject(session._id)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors" title="Reject">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </>
+        )}
+        {session.status === 'accepted' && (
+          <button onClick={() => onJoin(session._id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <Video className="w-3 h-3" />Join
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Mentor card ─── */
+function MentorCard({ match, onBook }) {
+  const isMutual = match.isMutualSwap;
+  return (
+    <div className={`relative p-4 rounded-2xl border transition-all hover:shadow-md ${
+      isMutual
+        ? 'border-emerald-200 dark:border-emerald-800 bg-gradient-to-br from-emerald-50/60 to-teal-50/40 dark:from-emerald-950/20 dark:to-teal-950/20'
+        : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-primary-200 dark:hover:border-primary-800'
+    }`}>
+      {isMutual && (
+        <span className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 rounded-full border border-emerald-200 dark:border-emerald-800">
+          <Zap className="w-2.5 h-2.5" />Mutual
+        </span>
+      )}
+
+      <div className="flex items-start gap-3 mb-3">
+        <Avatar src={match.user?.avatar} name={match.user?.name} size="md" className="rounded-xl shadow-sm shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm text-gray-900 dark:text-white truncate pr-12">{match.user?.name}</p>
+          {match.user?.bio && <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 mt-0.5">{match.user.bio}</p>}
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{match.user?.rating?.toFixed(1) || 'New'}</span>
+            {match.user?.numReviews > 0 && <span className="text-[10px] text-gray-400">({match.user.numReviews})</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Skill tags */}
+      {match.matchedSkills?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {match.matchedSkills.slice(0, 3).map((s, i) => (
+            <span key={s?._id || i} className="px-2.5 py-1 text-xs font-medium bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 rounded-lg border border-primary-100 dark:border-primary-900/40">
+              {s?.name || s}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <button
+        onClick={() => onBook(match)}
+        className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg hover:shadow-primary-500/20 hover:-translate-y-0.5 transition-all"
+      >
+        <Calendar className="w-4 h-4" />Book Session
+      </button>
+    </div>
+  );
+}
+
+/* ─── Main dashboard ─── */
 export default function Dashboard() {
-  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, refreshUser } = useAuthStore();
   const { skills, matches, fetchMySkills, addSkill, deleteSkill, fetchMatches } = useSkillStore();
   const { sessions, fetchSessions, updateSessionStatus } = useSessionStore();
 
   const [newSkill, setNewSkill] = useState({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
   const [customSkillName, setCustomSkillName] = useState('');
+  const [showAddSkill, setShowAddSkill] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState(null);
   const [selectedSkillForBooking, setSelectedSkillForBooking] = useState(null);
   const [selectedMentorSkills, setSelectedMentorSkills] = useState([]);
   const [personalStats, setPersonalStats] = useState(null);
+  const [activeSkillTab, setActiveSkillTab] = useState('teach');
 
   useEffect(() => {
     if (refreshUser) refreshUser();
@@ -36,18 +172,14 @@ export default function Dashboard() {
   }, [fetchMySkills, fetchMatches, fetchSessions, refreshUser]);
 
   useEffect(() => {
-    const fetchPersonalStats = async () => {
+    const load = async () => {
       try {
-        const response = await fetch(`${API_URL}/stats/me`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        });
-        const data = await response.json();
-        if (response.ok) setPersonalStats(data);
-      } catch (error) {
-        console.error('Failed to fetch personal stats:', error);
-      }
+        const r = await fetch(`${API_URL}/stats/me`, { headers: { Authorization: `Bearer ${user.token}` } });
+        const d = await r.json();
+        if (r.ok) setPersonalStats(d);
+      } catch (e) { console.error(e); }
     };
-    if (user?.token) fetchPersonalStats();
+    if (user?.token) load();
   }, [user]);
 
   const handleOpenBooking = (match) => {
@@ -57,516 +189,503 @@ export default function Dashboard() {
     setShowBooking(true);
   };
 
-  const recentSessions = sessions.slice(0, 3);
-  const pendingCount = sessions.filter((s) => s.status === 'pending').length;
-  const completedCount = sessions.filter((s) => s.status === 'completed').length;
-  const teachSkills = skills.filter((s) => s.type === 'teach');
-  const learnSkills = skills.filter((s) => s.type === 'learn');
+  const handleAccept = async (id) => { await updateSessionStatus(id, 'accepted'); toast.success('Session accepted!'); };
+  const handleReject = async (id) => { await updateSessionStatus(id, 'rejected'); toast.error('Session declined'); };
+  const handleJoin   = (id) => navigate(`/video/${id}`);
+  const handleComplete = async (id) => { await updateSessionStatus(id, 'completed'); toast.success('Marked complete!'); };
+
+  const recentSessions = sessions.slice(0, 5);
+  const pendingCount   = sessions.filter(s => s.status === 'pending').length;
+  const completedCount = sessions.filter(s => s.status === 'completed').length;
+  const teachSkills    = skills.filter(s => s.type === 'teach');
+  const learnSkills    = skills.filter(s => s.type === 'learn');
+  const activeSkills   = activeSkillTab === 'teach' ? teachSkills : learnSkills;
 
   const statCards = [
     {
-      label: t('Credits Available'),
-      value: user?.skillCredits || 0,
-      icon: Coins,
-      gradient: 'from-amber-500 to-orange-500',
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
-      trend: '+3 this week',
-      trendIcon: TrendingUp,
+      label: 'Skill Credits', value: user?.skillCredits || 0,
+      icon: Coins, bg: 'bg-amber-50 dark:bg-amber-950/30', iconColor: 'text-amber-600 dark:text-amber-400',
+      badge: 'Wallet', badgeBg: 'bg-amber-50 dark:bg-amber-950/40', badgeText: 'text-amber-600 dark:text-amber-400',
     },
     {
-      label: t('Skills Teaching'),
-      value: teachSkills.length,
-      icon: BookOpen,
-      gradient: 'from-emerald-500 to-teal-600',
-      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      trend: teachSkills.length > 0 ? '+2 this month' : 'Add your first skill',
-      trendIcon: teachSkills.length > 0 ? TrendingUp : Sparkles,
+      label: 'Skills Teaching', value: teachSkills.length,
+      icon: BookOpen, bg: 'bg-indigo-50 dark:bg-indigo-950/30', iconColor: 'text-indigo-600 dark:text-indigo-400',
+      badge: teachSkills.length > 0 ? 'Active' : 'Empty',
+      badgeBg: teachSkills.length > 0 ? 'bg-indigo-50 dark:bg-indigo-950/40' : 'bg-gray-100 dark:bg-gray-800',
+      badgeText: teachSkills.length > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400',
     },
     {
-      label: t('Pending Sessions'),
-      value: pendingCount,
-      icon: Clock,
-      gradient: 'from-blue-500 to-indigo-600',
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
-      trend: pendingCount > 0 ? 'Awaiting response' : 'No pending requests',
-      trendIcon: Clock,
+      label: 'Pending Sessions', value: pendingCount,
+      icon: Clock, bg: 'bg-orange-50 dark:bg-orange-950/30', iconColor: 'text-orange-600 dark:text-orange-400',
+      badge: pendingCount > 0 ? 'Action needed' : 'All clear',
+      badgeBg: pendingCount > 0 ? 'bg-orange-50 dark:bg-orange-950/40' : 'bg-emerald-50 dark:bg-emerald-950/40',
+      badgeText: pendingCount > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: t('Completed'),
-      value: completedCount,
-      icon: Award,
-      gradient: 'from-purple-500 to-pink-600',
-      bg: 'bg-purple-50 dark:bg-purple-950/30',
-      trend: completedCount > 0 ? `+${completedCount} total` : 'Complete your first session',
-      trendIcon: completedCount > 0 ? TrendingUp : Target,
+      label: 'Sessions Done', value: completedCount,
+      icon: CheckCircle, bg: 'bg-emerald-50 dark:bg-emerald-950/30', iconColor: 'text-emerald-600 dark:text-emerald-400',
+      badge: completedCount > 0 ? `${completedCount} total` : 'Start now',
+      badgeBg: 'bg-emerald-50 dark:bg-emerald-950/40', badgeText: 'text-emerald-600 dark:text-emerald-400',
     },
   ];
 
   return (
-    <div className="py-6 sm:py-8 lg:py-10 w-full">
-      <div className="container-page">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 lg:mb-10 gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-              {t('Welcome back', { name: user?.name || '' })}
-            </h1>
-            <p className="mt-2 text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-xl">
-              {t('Portfolio desc')}
-            </p>
-          </div>
-          <Link to="/profile" className="btn-secondary px-5 py-2.5 text-sm self-start sm:self-auto">
-            <User className="w-4 h-4" />
-            {t('View Profile')}
-          </Link>
-        </div>
+    <div className="py-6 sm:py-8 lg:py-10 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-10" role="list" aria-label="Key metrics">
-          {statCards.map((stat, i) => (
-            <article
-              key={i}
-              className={`group card-hover-interactive p-5 lg:p-6 relative overflow-hidden`}
-              style={{ animationDelay: `${i * 80}ms` }}
-              role="listitem"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: stat.gradient }} />
-              <div className="relative flex items-start justify-between">
-                <div className="flex-1">
-                  <div className={`w-12 h-12 rounded-2xl ${stat.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <stat.icon className="w-6 h-6 text-gray-900 dark:text-white" strokeWidth={2} />
-                  </div>
-                  <div className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {stat.label}
-                  </div>
-                </div>
-                <div className="flex items-end gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium text-sm">
-                  <stat.trendIcon className="w-4 h-4" />
-                  <span>{stat.trend}</span>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        {/* Personal Analytics Dashboard */}
-        {personalStats && (
-          <section className="mb-10" aria-labelledby="analytics-heading">
-            <div className="card-elevated p-6 lg:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h2 id="analytics-heading" className="flex items-center gap-2 text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
-                  <BarChart2 className="w-5 h-5 lg:w-6 lg:h-6 text-primary-500" />
-                  {t('Personal Analytics')}
-                </h2>
-                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>Last 6 months</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                {/* Sessions Over Time */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 lg:p-6 rounded-xl border border-gray-100 dark:border-gray-800">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5">{t('Sessions (Last 6 Months)')}</h3>
-                  <div className="flex items-end gap-3 h-40 lg:h-48">
-                    {personalStats.sessionsOverTime?.length > 0 ? (
-                      personalStats.sessionsOverTime.map((item, idx) => {
-                        const maxCount = Math.max(...personalStats.sessionsOverTime.map(i => i.count), 1);
-                        const height = `${Math.max((item.count / maxCount) * 100, 8)}%`;
-                        const monthName = new Date(item._id.year, item._id.month - 1).toLocaleString('default', { month: 'short' });
-                        return (
-                          <div key={idx} className="flex-1 flex flex-col justify-end items-center group relative h-full">
-                            <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                              {item.count} {item.count === 1 ? 'session' : 'sessions'}
-                            </div>
-                            <div className="w-full max-w-[36px] bg-gradient-to-t from-primary-500 to-primary-400 dark:from-primary-600 dark:to-primary-500 rounded-t-sm transition-all duration-500 hover:from-primary-600 hover:to-primary-500" style={{ height }} />
-                            <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mt-3">{monthName}</span>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
-                        No session data yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Skill Popularity */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-5 lg:p-6 rounded-xl border border-gray-100 dark:border-gray-800 flex flex-col justify-center">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-5">{t('Skill Demand (Requests Received)')}</h3>
-                  <div className="space-y-5">
-                    {personalStats.skillPopularity?.length > 0 ? (
-                      personalStats.skillPopularity.slice(0, 5).map((skill, idx) => {
-                        const maxCount = Math.max(...personalStats.skillPopularity.map(s => s.count), 1);
-                        const width = `${(skill.count / maxCount) * 100}%`;
-                        return (
-                          <div key={idx} className="group">
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="font-medium text-gray-700 dark:text-gray-300 truncate pr-2">{skill.name}</span>
-                              <span className="text-gray-500 dark:text-gray-400 font-medium">{skill.count} requests</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                              <div
-                                className="bg-gradient-to-r from-emerald-500 to-teal-500 h-2.5 rounded-full transition-all duration-700 ease-out group-hover:shadow-[0_0_8px_rgba(16,185,129,0.5)]"
-                                style={{ width }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="w-full h-32 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
-                        No requests yet — add skills you teach!
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+        {/* ═══════════════════════════════════════
+            HEADER
+        ═══════════════════════════════════════ */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Avatar src={user?.avatar} name={user?.name} size="lg"
+                className="rounded-2xl ring-2 ring-white dark:ring-gray-800 shadow-lg" />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-400 rounded-full border-2 border-white dark:border-gray-900" />
             </div>
-          </section>
-        )}
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Good to see you,</p>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                {user?.name?.split(' ')[0] || 'User'} 👋
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/explore"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all">
+              <Search className="w-4 h-4" />Find Mentors
+            </Link>
+            <Link to="/sessions"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 transition-all shadow-sm">
+              <Calendar className="w-4 h-4" />Sessions
+            </Link>
+            <Link to="/profile"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 transition-all shadow-sm">
+              <User className="w-4 h-4" />Profile
+            </Link>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-          {/* Left Column - Skills Management */}
-          <section id="skills-section" className="space-y-6" aria-labelledby="skills-heading">
-            <div id="tour-skills" className="card-elevated p-6 lg:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h2 id="skills-heading" className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 lg:w-6 lg:h-6 text-primary-500" />
-                  {t('Your Skills Portfolio')}
-                </h2>
-                <span className="badge badge-primary">{skills.length} total skills</span>
+        {/* ═══════════════════════════════════════
+            STAT CARDS — 4 col
+        ═══════════════════════════════════════ */}
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          {statCards.map((s, i) => <StatCard key={i} stat={s} />)}
+        </div>
+
+        {/* ═══════════════════════════════════════
+            ANALYTICS (full width)
+        ═══════════════════════════════════════ */}
+        {personalStats && (
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden mb-8">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="flex items-center gap-2.5 text-base font-bold text-gray-900 dark:text-white">
+                <div className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center">
+                  <BarChart2 className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                </div>
+                Performance Analytics
+              </h2>
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />Last 6 months
+              </span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100 dark:divide-gray-800">
+              {/* Bar chart */}
+              <div className="p-5 sm:p-6">
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-5">Sessions Over Time</p>
+                <div className="flex items-end gap-2 sm:gap-3 h-32 sm:h-40">
+                  {personalStats.sessionsOverTime?.length > 0 ? (
+                    personalStats.sessionsOverTime.map((item, idx) => {
+                      const max = Math.max(...personalStats.sessionsOverTime.map(i => i.count), 1);
+                      const h   = Math.max((item.count / max) * 100, 5);
+                      const mo  = new Date(item._id.year, item._id.month - 1).toLocaleString('default', { month: 'short' });
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col justify-end items-center gap-2 h-full group relative cursor-default">
+                          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 shadow-xl pointer-events-none">
+                            {item.count} session{item.count !== 1 ? 's' : ''}
+                          </div>
+                          <div
+                            className="w-full max-w-[32px] rounded-t-lg bg-gradient-to-t from-primary-600 to-primary-400 group-hover:from-primary-700 group-hover:to-primary-500 transition-all duration-300"
+                            style={{ height: `${h}%` }}
+                          />
+                          <span className="text-[10px] font-medium text-gray-400 shrink-0">{mo}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="w-full flex flex-col items-center justify-center gap-2 text-gray-300 dark:text-gray-700">
+                      <BarChart2 className="w-10 h-10" strokeWidth={1} />
+                      <p className="text-xs text-gray-400">No session data yet</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const finalName = newSkill.name === '__custom__' ? customSkillName : newSkill.name;
-                if (!finalName || !newSkill.category) return;
-                addSkill({ ...newSkill, name: finalName });
-                setNewSkill({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
-                setCustomSkillName('');
-              }} className="space-y-5 mb-6 p-5 lg:p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary-500" />
-                  {t('Add a new skill')}
-                </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label-field">{t('Category')}</label>
-                    <select
-                      className="input-field"
-                      value={newSkill.category}
-                      onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value, name: '' })}
-                    >
-                      <option value="">{t('Select Category')}</option>
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat.value} value={cat.value}>{cat.icon} {cat.value}</option>
-                      ))}
-                    </select>
+              {/* Skill demand */}
+              <div className="p-5 sm:p-6">
+                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-5">Top Skill Demand</p>
+                {personalStats.skillPopularity?.length > 0 ? (
+                  <div className="space-y-4">
+                    {personalStats.skillPopularity.slice(0, 5).map((skill, idx) => {
+                      const max = Math.max(...personalStats.skillPopularity.map(s => s.count), 1);
+                      const w   = `${(skill.count / max) * 100}%`;
+                      const colors = [
+                        'from-primary-500 to-indigo-400',
+                        'from-emerald-500 to-teal-400',
+                        'from-amber-500 to-orange-400',
+                        'from-purple-500 to-pink-400',
+                        'from-blue-500 to-cyan-400',
+                      ];
+                      return (
+                        <div key={idx}>
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate pr-3">{skill.name}</span>
+                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 shrink-0 tabular-nums">{skill.count} req</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div className={`h-full bg-gradient-to-r ${colors[idx]} rounded-full transition-all duration-700`} style={{ width: w }} />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <label className="label-field">{t('Skill')}</label>
-                    <select
-                      className="input-field"
-                      value={newSkill.name}
-                      onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
-                      disabled={!newSkill.category}
-                    >
-                      <option value="">{newSkill.category ? t('Select Skill') : t('Select category first')}</option>
-                      {newSkill.category && SKILLS_BY_CATEGORY[newSkill.category]?.map((skill) => (
-                        <option key={skill} value={skill}>{skill}</option>
-                      ))}
-                      {newSkill.category && <option value="__custom__">{t('Type custom skill...')}</option>}
-                    </select>
-                  </div>
-                </div>
-
-                {newSkill.name === '__custom__' && (
-                  <div className="sm:col-span-2">
-                    <label className="label-field">{t('Custom Skill Name')}</label>
-                    <input
-                      type="text"
-                      placeholder="Enter your custom skill name..."
-                      className="input-field"
-                      value={customSkillName}
-                      onChange={(e) => setCustomSkillName(e.target.value)}
-                      autoFocus
-                    />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-32 gap-2 text-gray-300 dark:text-gray-700">
+                    <TrendingUp className="w-10 h-10" strokeWidth={1} />
+                    <p className="text-xs text-gray-400 text-center">Add skills you teach to see demand data</p>
                   </div>
                 )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <select className="input-field" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
-                    <option value="teach">{t('I want to TEACH')}</option>
-                    <option value="learn">{t('I want to LEARN')}</option>
-                  </select>
-                  <select className="input-field" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
-                    <option value="expert">Expert</option>
-                  </select>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!newSkill.category || (!newSkill.name || (newSkill.name === '__custom__' && !customSkillName))}
-                  className="btn-primary w-full sm:w-auto"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {t('Add')}
-                </button>
-              </form>
-
-              <div className="space-y-6">
-                <div>
-                  <h4 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                    {t('Skills You Teach')} ({teachSkills.length})
-                  </h4>
-                  {teachSkills.length === 0 ? (
-                    <div className="p-6 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed">
-                      <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mb-3">Add skills you can teach others</p>
-                      <button type="button" onClick={() => document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth' })} className="text-sm font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
-                        Add your first skill →
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {teachSkills.map((skill) => (
-                        <div key={skill._id} className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-xl border border-indigo-100 dark:border-indigo-800 card-hover">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                              <BookOpen className="w-5 h-5" strokeWidth={2} />
-                            </div>
-                            <div>
-                              <span className="font-semibold text-indigo-900 dark:text-indigo-300">{skill.name}</span>
-                              <span className="text-xs text-indigo-500 dark:text-indigo-400 ml-2">({skill.proficiencyLevel})</span>
-                              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">• {skill.category}</span>
-                            </div>
-                          </div>
-                          <button onClick={() => deleteSkill(skill._id)} className="btn-ghost p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label={`Remove ${skill.name}`}>
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <h4 className="mb-3 text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    {t('Skills You Want to Learn')} ({learnSkills.length})
-                  </h4>
-                  {learnSkills.length === 0 ? (
-                    <div className="p-6 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed">
-                      <Target className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                      <p className="text-sm text-gray-400 dark:text-gray-500 mb-3">Add skills you want to learn</p>
-                      <button type="button" onClick={() => document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth' })} className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
-                        Add learning goals →
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {learnSkills.map((skill) => (
-                        <div key={skill._id} className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl border border-emerald-100 dark:border-emerald-800 card-hover">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                              <Target className="w-5 h-5" strokeWidth={2} />
-                            </div>
-                            <div>
-                              <span className="font-semibold text-emerald-900 dark:text-emerald-300">{skill.name}</span>
-                              <span className="text-xs text-emerald-500 dark:text-emerald-400 ml-2">({skill.proficiencyLevel})</span>
-                              <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">• {skill.category}</span>
-                            </div>
-                          </div>
-                          <button onClick={() => deleteSkill(skill._id)} className="btn-ghost p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" aria-label={`Remove ${skill.name}`}>
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
-          </section>
+          </div>
+        )}
 
-          {/* Right Column */}
-          <section className="space-y-6 lg:space-y-8">
+        {/* ═══════════════════════════════════════
+            MAIN 3-COLUMN GRID
+            Left (skills) | Centre (sessions) | Right (challenges + mentors)
+        ═══════════════════════════════════════ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 mb-8">
+
+          {/* ── COLUMN 1: Skills Portfolio ── */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
+                <div className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center">
+                  <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                Skills Portfolio
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full">{skills.length}</span>
+                <button
+                  onClick={() => setShowAddSkill(!showAddSkill)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all ${
+                    showAddSkill
+                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20'
+                      : 'bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-950/60'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />Add
+                </button>
+              </div>
+            </div>
+
+            {/* Add skill form */}
+            {showAddSkill && (
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const name = newSkill.name === '__custom__' ? customSkillName : newSkill.name;
+                    if (!name || !newSkill.category) return;
+                    addSkill({ ...newSkill, name });
+                    setNewSkill({ name: '', category: '', type: 'teach', proficiencyLevel: 'beginner' });
+                    setCustomSkillName('');
+                    setShowAddSkill(false);
+                    toast.success('Skill added!');
+                  }}
+                  className="space-y-3"
+                >
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="relative col-span-2">
+                      <select
+                        className="input-field text-sm py-2.5 appearance-none pr-8"
+                        value={newSkill.category}
+                        onChange={(e) => setNewSkill({ ...newSkill, category: e.target.value, name: '' })}
+                      >
+                        <option value="">Category</option>
+                        {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.value}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                    <div className="relative col-span-2">
+                      <select
+                        className="input-field text-sm py-2.5 appearance-none pr-8 disabled:opacity-50"
+                        value={newSkill.name}
+                        onChange={(e) => setNewSkill({ ...newSkill, name: e.target.value })}
+                        disabled={!newSkill.category}
+                      >
+                        <option value="">{newSkill.category ? 'Select skill' : 'Select category first'}</option>
+                        {newSkill.category && SKILLS_BY_CATEGORY[newSkill.category]?.map(s => <option key={s} value={s}>{s}</option>)}
+                        {newSkill.category && <option value="__custom__">✏️ Custom skill…</option>}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {newSkill.name === '__custom__' && (
+                      <input
+                        className="input-field text-sm py-2.5 col-span-2"
+                        placeholder="Skill name…"
+                        value={customSkillName}
+                        onChange={(e) => setCustomSkillName(e.target.value)}
+                        autoFocus
+                      />
+                    )}
+                    <div className="relative">
+                      <select className="input-field text-sm py-2.5 appearance-none pr-8" value={newSkill.type} onChange={(e) => setNewSkill({ ...newSkill, type: e.target.value })}>
+                        <option value="teach">Teach</option>
+                        <option value="learn">Learn</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                    <div className="relative">
+                      <select className="input-field text-sm py-2.5 appearance-none pr-8" value={newSkill.proficiencyLevel} onChange={(e) => setNewSkill({ ...newSkill, proficiencyLevel: e.target.value })}>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                        <option value="expert">Expert</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      disabled={!newSkill.category || (!newSkill.name || (newSkill.name === '__custom__' && !customSkillName))}
+                      className="flex-1 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl disabled:opacity-40 hover:shadow-lg hover:shadow-primary-500/20 transition-all"
+                    >
+                      Add Skill
+                    </button>
+                    <button type="button" onClick={() => setShowAddSkill(false)} className="px-4 py-2.5 text-sm font-semibold text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Tab switcher */}
+            <div className="flex p-2 gap-1 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/20">
+              <button
+                onClick={() => setActiveSkillTab('teach')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition-all ${
+                  activeSkillTab === 'teach'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                Teaching ({teachSkills.length})
+              </button>
+              <button
+                onClick={() => setActiveSkillTab('learn')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs font-semibold rounded-xl transition-all ${
+                  activeSkillTab === 'learn'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-800'
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+                Learning ({learnSkills.length})
+              </button>
+            </div>
+
+            {/* Skill chips */}
+            <div className="p-4 flex-1">
+              {activeSkills.length === 0 ? (
+                <button
+                  onClick={() => setShowAddSkill(true)}
+                  className="w-full h-full min-h-[120px] flex flex-col items-center justify-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-primary-600 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50/50 dark:hover:bg-primary-950/20 transition-all"
+                >
+                  <Plus className="w-6 h-6 opacity-50" />
+                  <span className="text-sm font-medium">
+                    {activeSkillTab === 'teach' ? 'Add skills you can teach' : 'Add skills you want to learn'}
+                  </span>
+                </button>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {activeSkills.map((skill) => (
+                    <div
+                      key={skill._id}
+                      className={`group flex items-center gap-2 pl-3 pr-2 py-2 rounded-xl border transition-all hover:shadow-sm ${
+                        activeSkillTab === 'teach'
+                          ? 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900/40 hover:border-indigo-300 dark:hover:border-indigo-700'
+                          : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/40 hover:border-emerald-300 dark:hover:border-emerald-700'
+                      }`}
+                    >
+                      <div>
+                        <span className={`text-sm font-semibold block leading-tight ${activeSkillTab === 'teach' ? 'text-indigo-800 dark:text-indigo-200' : 'text-emerald-800 dark:text-emerald-200'}`}>
+                          {skill.name}
+                        </span>
+                        <span className={`text-[10px] font-medium ${activeSkillTab === 'teach' ? 'text-indigo-400 dark:text-indigo-500' : 'text-emerald-400 dark:text-emerald-500'}`}>
+                          {skill.proficiencyLevel}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => deleteSkill(skill._id)}
+                        className="w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-all"
+                        aria-label={`Remove ${skill.name}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── COLUMN 2: Recent Sessions ── */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
+                <div className="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
+                Recent Sessions
+              </h2>
+              <Link to="/sessions" className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 transition-colors">
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* Session summary pills */}
+            <div className="flex gap-2 px-4 py-3 bg-gray-50/60 dark:bg-gray-800/20 border-b border-gray-100 dark:border-gray-800">
+              {[
+                { label: 'Total', value: sessions.length, cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400' },
+                { label: 'Pending', value: pendingCount, cls: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400' },
+                { label: 'Done', value: completedCount, cls: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400' },
+              ].map(p => (
+                <Link key={p.label} to="/sessions" className={`flex-1 flex flex-col items-center py-2 rounded-xl ${p.cls} hover:opacity-80 transition-opacity`}>
+                  <span className="text-base font-extrabold tabular-nums">{p.value}</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide">{p.label}</span>
+                </Link>
+              ))}
+            </div>
+
+            {recentSessions.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center">
+                <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">No sessions yet</p>
+                  <p className="text-xs text-gray-400">Find a mentor and book your first session</p>
+                </div>
+                <Link to="/explore" className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                  Browse mentors <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50 dark:divide-gray-800/60 flex-1">
+                {recentSessions.map(session => (
+                  <SessionRow
+                    key={session._id}
+                    session={session}
+                    userId={user._id}
+                    onAccept={handleAccept}
+                    onReject={handleReject}
+                    onJoin={handleJoin}
+                    onComplete={handleComplete}
+                  />
+                ))}
+              </div>
+            )}
+
+            <div className="p-3 border-t border-gray-100 dark:border-gray-800">
+              <Link to="/sessions" className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+                View all sessions <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* ── COLUMN 3: Challenges + Recommended ── */}
+          <div className="space-y-5 md:col-span-2 xl:col-span-1">
             {/* Weekly Challenges */}
             <div id="tour-challenges">
               <WeeklyChallenges />
             </div>
 
-            {/* Recent Sessions */}
-            <div id="tour-sessions" className="card-elevated p-6 lg:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="w-5 h-5 lg:w-6 lg:h-6 text-primary-500" />
-                  {t('Recent Sessions')}
+            {/* Recommended Mentors */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                <h2 className="flex items-center gap-2.5 text-sm font-bold text-gray-900 dark:text-white">
+                  <div className="w-7 h-7 rounded-xl bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  Recommended Mentors
                 </h2>
-                <Link to="/sessions" className="btn-ghost text-sm">
-                  {t('View All')}
-                  <ArrowRight className="w-3.5 h-3.5" />
+                <Link to="/explore" className="text-xs font-semibold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 flex items-center gap-1 transition-colors">
+                  See all <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
-              {recentSessions.length === 0 ? (
-                <div className="p-8 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                  <p className="text-sm text-gray-400 dark:text-gray-500 mb-5">No sessions yet. Find mentors on the Explore page!</p>
-                  <Link to="/explore" className="btn-primary inline-flex items-center gap-2">
-                    <Search className="w-4 h-4" />
-                    Explore Mentors
-                  </Link>
+
+              {matches.filter(m => m?.user?._id).length === 0 ? (
+                <div className="flex flex-col items-center gap-3 p-8 text-center">
+                  <div className="w-12 h-12 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+                    <Users className="w-6 h-6 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">No recommendations yet</p>
+                    <p className="text-xs text-gray-400">Add learning skills to get matched</p>
+                  </div>
+                  <button onClick={() => { setActiveSkillTab('learn'); setShowAddSkill(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1">
+                    Add learning skills <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {recentSessions.map((session) => {
-                    const isMentor = session.mentor?._id === user._id;
-                    const other = isMentor ? session.learner : session.mentor;
-                    return (
-                      <div key={session._id} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl card-hover border border-gray-100 dark:border-gray-800">
-                        <Avatar src={other?.avatar} name={other?.name} size="md" className="rounded-xl shadow-lg" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{other?.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <BookOpen className="w-3 h-3" />
-                            {session.skill?.name} • {new Date(session.scheduledAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-3 py-1.5 text-xs font-semibold rounded-lg ${
-                            session.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                            session.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' :
-                            session.status === 'accepted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
-                            'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                          }`}>
-                            {session.status}
-                          </span>
-                          {session.status === 'pending' && isMentor && (
-                            <div className="flex gap-1">
-                              <button onClick={async () => { await updateSessionStatus(session._id, 'accepted'); toast.success('Session accepted'); }} className="btn-ghost p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Accept" aria-label="Accept session">
-                                <Check className="w-4 h-4" />
-                              </button>
-                              <button onClick={async () => { await updateSessionStatus(session._id, 'rejected'); toast.error('Session rejected'); }} className="btn-ghost p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30" title="Reject" aria-label="Reject session">
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="p-4 space-y-3">
+                  {matches.filter(m => m?.user?._id).slice(0, 3).map(match => (
+                    <MentorCard key={match.user._id} match={match} onBook={handleOpenBooking} />
+                  ))}
                 </div>
               )}
             </div>
-
-            {/* Recommended Mentors */}
-            <div id="tour-mentors" className="card-elevated p-6 lg:p-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h2 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                  <Users className="w-5 h-5 lg:w-6 lg:h-6 text-primary-500" />
-                  {t('Recommended Mentors')}
-                </h2>
-                <Link to="/explore" className="btn-ghost text-sm">
-                  {t('Explore More')}
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-              <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">Based on skills you want to learn</p>
-              <div className="space-y-4">
-                {matches.length === 0 ? (
-                  <div className="p-8 text-center bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800 border-dashed">
-                    <Search className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
-                    <p className="text-sm text-gray-400 dark:text-gray-500 mb-5">No mentors found. Add skills you want to learn!</p>
-                    <Link to="/dashboard#skills-section" className="btn-primary inline-flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      Add Learning Skills
-                    </Link>
-                  </div>
-                ) : (
-                  matches
-                    .filter((m) => m?.user?._id)
-                    .slice(0, 3)
-                    .map((match) => (
-                    <div
-                      key={match.user._id}
-                      className={`relative card-hover-interactive p-5 border rounded-2xl ${
-                        match.isMutualSwap
-                          ? 'border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30'
-                          : 'border-gray-100 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800'
-                      }`}
-                    >
-                      {match.isMutualSwap && (
-                        <div className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-lg flex items-center gap-1 z-10">
-                          <Zap className="w-3 h-3" />
-                          MUTUAL SWAP
-                        </div>
-                      )}
-                      <div className="flex items-start gap-4">
-                        <Avatar src={match.user?.avatar} name={match.user?.name || 'User'} size="lg" className="rounded-xl shadow-lg shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start gap-4 mb-2">
-                            <h3 className="font-bold text-gray-900 dark:text-white">{match.user?.name || 'User'}</h3>
-                            <div className="flex flex-col items-end gap-1.5 shrink-0">
-                              <span className="badge badge-amber flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-current" />
-                                {match.user?.rating || 'New'}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 line-clamp-1">{match.user?.bio || 'Ready to share knowledge!'}</p>
-                          <div className="mt-3 flex flex-wrap gap-1.5 mb-3">
-                            {match.matchedSkills?.map((s, idx) => (
-                              <span key={s?._id || s?.name || idx} className="px-2.5 py-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 rounded-md border border-emerald-100 dark:border-emerald-800">
-                                {s?.name || s}
-                              </span>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => handleOpenBooking(match)}
-                            className="w-full py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 text-white text-xs font-bold rounded-lg hover:shadow-lg hover:shadow-primary-500/25 transition-all flex items-center justify-center gap-2"
-                          >
-                            {t('Book Session')}
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </section>
+          </div>
         </div>
 
-        {/* Quick Links */}
-        <section className="mt-10" aria-labelledby="quick-links-heading">
-          <h2 id="quick-links-heading" className="sr-only">Quick Links</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6" role="list">
+        {/* ═══════════════════════════════════════
+            QUICK ACCESS
+        ═══════════════════════════════════════ */}
+        <div>
+          <p className="text-xs font-bold text-gray-400 dark:text-gray-600 uppercase tracking-widest mb-3 px-1">Quick Access</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { to: '/explore', icon: Search, label: t('Find Mentors'), gradient: 'from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-              { to: '/chat', icon: MessageCircle, label: t('Messages'), gradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30', iconColor: 'text-emerald-600 dark:text-emerald-400' },
-              { to: '/leaderboard', icon: Trophy, label: t('Leaderboard'), gradient: 'from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30', iconColor: 'text-amber-600 dark:text-amber-400' },
-              { to: '/community', icon: Globe, label: t('Community'), gradient: 'from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30', iconColor: 'text-purple-600 dark:text-purple-400' },
-            ].map((link) => (
-              <Link key={link.to} to={link.to} className={`group p-5 lg:p-6 bg-gradient-to-br ${link.gradient} card-hover-interactive rounded-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center justify-center text-center`} role="listitem">
-                <div className="mb-3"><link.icon className={`w-7 h-7 lg:w-8 lg:h-8 ${link.iconColor}`} strokeWidth={1.5} /></div>
-                <p className="text-sm lg:text-base font-medium text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{link.label}</p>
+              { to: '/explore',     icon: Search,       label: 'Find Mentors', sub: 'Discover experts',  iconCls: 'text-blue-600 dark:text-blue-400',   bg: 'bg-blue-50 dark:bg-blue-950/30',   border: 'border-blue-100 dark:border-blue-900/40',   hover: 'hover:border-blue-300 dark:hover:border-blue-700' },
+              { to: '/chat',        icon: MessageCircle,label: 'Messages',     sub: 'Chat with peers',   iconCls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-100 dark:border-emerald-900/40', hover: 'hover:border-emerald-300 dark:hover:border-emerald-700' },
+              { to: '/leaderboard', icon: Trophy,       label: 'Leaderboard', sub: 'See rankings',      iconCls: 'text-amber-600 dark:text-amber-400',  bg: 'bg-amber-50 dark:bg-amber-950/30',  border: 'border-amber-100 dark:border-amber-900/40',  hover: 'hover:border-amber-300 dark:hover:border-amber-700' },
+              { to: '/community',   icon: Globe,        label: 'Community',   sub: 'Join discussions',  iconCls: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-950/30', border: 'border-purple-100 dark:border-purple-900/40', hover: 'hover:border-purple-300 dark:hover:border-purple-700' },
+            ].map(link => (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`group flex items-center gap-3 p-4 bg-white dark:bg-gray-900 border ${link.border} ${link.hover} rounded-2xl hover:shadow-md transition-all`}
+              >
+                <div className={`w-10 h-10 rounded-xl ${link.bg} flex items-center justify-center shrink-0`}>
+                  <link.icon className={`w-5 h-5 ${link.iconCls}`} strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">{link.label}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 truncate">{link.sub}</p>
+                </div>
+                <ArrowUpRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 shrink-0 transition-colors" />
               </Link>
             ))}
           </div>
-        </section>
+        </div>
 
-        {/* Booking Modal */}
+        {/* Modals */}
         {showBooking && selectedMentor && (
           <SessionScheduler
             isOpen={showBooking}
@@ -577,7 +696,6 @@ export default function Dashboard() {
             currentUser={user}
           />
         )}
-
         <OnboardingTour />
       </div>
     </div>

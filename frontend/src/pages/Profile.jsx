@@ -220,10 +220,10 @@ export default function Profile() {
   return (
     <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Profile Header */}
-      <div className="relative p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500" />
+      <div className="relative p-4 sm:p-6 lg:p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500" />
 
-        <div className="relative flex flex-col md:flex-row items-start gap-6 pt-16">
+        <div className="relative flex flex-col md:flex-row items-start gap-4 sm:gap-6 pt-12 sm:pt-16">
           <div className="relative group/avatar">
             <Avatar src={profile.avatar} name={profile.name} size="xl" className="border-4 border-white dark:border-gray-900 shadow-xl" />
             {isOwnProfile && (
@@ -257,16 +257,16 @@ export default function Profile() {
                   <Edit3 className="w-4 h-4" /> {isEditing ? t('Cancel') : t('Edit Profile')}
                 </button>
               ) : (
-                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                <div className="flex flex-col xs:flex-row flex-wrap items-stretch xs:items-center gap-2 self-start sm:self-auto w-full xs:w-auto">
                   <button
                     onClick={() => setShowBooking(true)}
-                    className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+                    className="flex-1 xs:flex-none px-4 py-2 text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl hover:shadow-lg transition flex items-center justify-center gap-2"
                   >
                     <Calendar className="w-4 h-4" /> {t('Book Session')}
                   </button>
                   <button
                     onClick={handleStartChat}
-                    className="px-5 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center gap-2"
+                    className="flex-1 xs:flex-none px-4 py-2 text-sm font-medium bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-xl hover:shadow-lg transition flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="w-4 h-4" /> {t('Message')}
                   </button>
@@ -297,21 +297,21 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl text-center">
-            <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{profile.skillCredits || 0}</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-6 sm:mt-8">
+          <div className="p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-xl text-center">
+            <div className="text-xl sm:text-2xl font-bold text-primary-600 dark:text-primary-400">{profile.skillCredits || 0}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Credits')}</div>
           </div>
-          <div className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl text-center">
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{profile.totalSessionsAsMentor || 0}</div>
+          <div className="p-3 sm:p-4 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-xl text-center">
+            <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">{profile.totalSessionsAsMentor || 0}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Sessions Taught')}</div>
           </div>
-          <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl text-center">
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{profile.totalSessionsAsLearner || 0}</div>
+          <div className="p-3 sm:p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 rounded-xl text-center">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{profile.totalSessionsAsLearner || 0}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Sessions Learned')}</div>
           </div>
-          <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl text-center">
-            <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{profile.streak?.current || 0}</div>
+          <div className="p-3 sm:p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-xl text-center">
+            <div className="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{profile.streak?.current || 0}</div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Day Streak')}</div>
           </div>
         </div>
@@ -353,8 +353,8 @@ export default function Profile() {
 
       {/* Edit Form */}
       {isEditing && (
-        <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Edit Profile')}</h2>
+      <div className="mt-6 p-4 sm:p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Edit Profile')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">{t('Name')}</label>
@@ -470,8 +470,8 @@ export default function Profile() {
       </div>
 
       {/* Reviews */}
-      <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Reviews')} ({reviews.length})</h2>
+      <div className="mt-6 p-4 sm:p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">{t('Reviews')} ({reviews.length})</h2>
         {reviews.length > 0 ? (
           <div className="space-y-4">
             {reviews.map((review) => (
@@ -508,7 +508,7 @@ export default function Profile() {
 
       {/* Danger Zone */}
       {isOwnProfile && (
-        <div className="mt-6 p-6 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 rounded-2xl shadow-sm">
+        <div className="mt-6 p-4 sm:p-6 bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 rounded-2xl shadow-sm">
           <h2 className="text-lg font-bold text-red-600 dark:text-red-400 mb-2">{t('Danger Zone')}</h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             {t('Danger Text')}

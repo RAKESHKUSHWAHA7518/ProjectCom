@@ -43,14 +43,14 @@ function StatCard({ label, value, icon: IconComponent, gradient, trend, trendIco
   const Icon = IconComponent
   const TrendIcon = TrendIconComponent
   return (
-    <div className="card-hover-interactive p-5 lg:p-6 relative overflow-hidden">
+    <div className="card-hover-interactive p-4 sm:p-5 lg:p-6 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br opacity-0 hover:opacity-100 transition-opacity duration-300" style={{ background: gradient }} />
       <div className="relative flex items-start justify-between">
         <div className="flex-1">
           <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center mb-4 hover:scale-110 transition-transform duration-300`}>
             <IconComponent className="w-6 h-6 text-gray-900 dark:text-white" strokeWidth={2} />
           </div>
-          <div className="text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+          <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </div>
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</div>
@@ -503,7 +503,7 @@ function ReportsSection() {
 function Section({ title, icon: IconComponent, subtitle, children }) {
   const Icon = IconComponent
   return (
-    <div className="card-elevated p-6 lg:p-8 mb-6 lg:mb-8">
+    <div className="card-elevated p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h2 className="flex items-center gap-2 text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">
@@ -553,24 +553,25 @@ export default function AdminDashboard() {
     <div className="py-8 lg:py-10 w-full">
       <div className="container-page">
         {/* Header */}
-        <div className="mb-8 lg:mb-10">
+        <div className="mb-6 sm:mb-8 lg:mb-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
                 Admin Dashboard
               </h1>
               <p className="mt-2 text-sm sm:text-base text-gray-500 dark:text-gray-400 max-w-xl">
                 Manage users, view stats and moderate reports.
               </p>
             </div>
-            <div className="flex items-center gap-3 self-start sm:self-end">
-              <button className="btn-secondary">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-end">
+              <button className="btn-secondary text-sm px-3 sm:px-4 py-2 sm:py-2.5">
                 <Download className="w-4 h-4" />
-                Export Data
+                <span className="hidden sm:inline">Export Data</span>
+                <span className="sm:hidden">Export</span>
               </button>
-              <button className="btn-secondary">
+              <button className="btn-secondary text-sm px-3 sm:px-4 py-2 sm:py-2.5">
                 <Settings className="w-4 h-4" />
-                Settings
+                <span className="hidden sm:inline">Settings</span>
               </button>
             </div>
           </div>

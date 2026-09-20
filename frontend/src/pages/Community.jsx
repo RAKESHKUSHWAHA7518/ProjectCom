@@ -190,7 +190,7 @@ export default function Community() {
             {communities.map((community) => (
               <div
                 key={community._id}
-                className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group"
+                className="p-4 sm:p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer group"
                 onClick={() => navigate(`/community/${community._id}`)}
               >
                 <div className="flex items-center gap-3 mb-3">
@@ -308,16 +308,16 @@ export default function Community() {
 
       {/* Community header */}
       <div className="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm mb-6">
-        <div className="flex items-center gap-4 mb-3">
-          <span className="text-4xl">{activeCommunity.icon}</span>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{activeCommunity.name}</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{activeCommunity.description}</p>
+        <div className="flex items-start gap-3 sm:gap-4 mb-3">
+          <span className="text-3xl sm:text-4xl shrink-0">{activeCommunity.icon}</span>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">{activeCommunity.name}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{activeCommunity.description}</p>
           </div>
           {isMember ? (
-            <button onClick={() => leaveCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">{t('Leave')}</button>
+            <button onClick={() => leaveCommunity(activeCommunity._id)} className="shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/50 transition">{t('Leave')}</button>
           ) : (
-            <button onClick={() => joinCommunity(activeCommunity._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">{t('Join Community')}</button>
+            <button onClick={() => joinCommunity(activeCommunity._id)} className="shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">{t('Join')}</button>
           )}
         </div>
         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -483,12 +483,12 @@ export default function Community() {
                     <input
                       type="text"
                       placeholder={t('Write a reply...')}
-                      className="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
+                      className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
                       value={replyContent[post._id] || ''}
                       onChange={(e) => setReplyContent({ ...replyContent, [post._id]: e.target.value })}
                       onKeyDown={(e) => e.key === 'Enter' && handleReply(post._id)}
                     />
-                    <button onClick={() => handleReply(post._id)} className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">
+                    <button onClick={() => handleReply(post._id)} className="shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-primary-600 rounded-xl hover:bg-primary-700 transition">
                       {t('Reply')}
                     </button>
                   </div>

@@ -793,7 +793,7 @@ export default function VideoCall() {
       </div>
 
       {/* Controls Bar */}
-      <div className="flex items-center justify-center gap-3 sm:gap-5 px-4 py-4 sm:py-6 bg-black/40 backdrop-blur-sm border-t border-white/5">
+      <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 px-4 py-4 sm:py-6 bg-black/40 backdrop-blur-sm border-t border-white/5">
 
         {/* Mute */}
         <div className="flex flex-col items-center gap-1.5">

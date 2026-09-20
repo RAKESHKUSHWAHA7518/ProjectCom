@@ -4,40 +4,35 @@ import { useSessionStore } from '../store/sessionStore';
 import { useReviewStore } from '../store/reviewStore';
 import Avatar from '../components/Avatar';
 import ReviewModal from '../components/ReviewModal';
-import { Calendar, Clock, Video, CheckCircle, XCircle, AlertCircle, ChevronRight, MessageSquare, Star } from 'lucide-react';
+import {
+  Calendar, Clock, Video, CheckCircle, XCircle, MessageSquare, Star,
+  Plus, ChevronDown, FileText, BookOpen, Target
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
 
 export default function Sessions() {
-  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { sessions, fetchSessions, updateSessionStatus, addSessionNote, isLoading } = useSessionStore();
   const { myGivenReviews, fetchMyGivenReviews, createReview } = useReviewStore();
-  const [filter, setFilter] = useState('pending'); // 'pending', 'completed', 'uncompleted'
+  const [filter, setFilter] = useState('pending');
   const [activeNoteSession, setActiveNoteSession] = useState(null);
   const [noteContent, setNoteContent] = useState('');
   const [reviewSession, setReviewSession] = useState(null);
+  const [expandedSession, setExpandedSession] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchSessions();
-    fetchMyGivenReviews();
-  }, [fetchSessions, fetchMyGivenReviews]);
+  useEffect(() => { fetchSessions(); fetchMyGivenReviews(); }, [fetchSessions, fetchMyGivenReviews]);
 
   const handleStatusUpdate = async (sessionId, status) => {
     try {
       await updateSessionStatus(sessionId, status);
       toast.success(`Session ${status}`);
       if (status === 'completed') {
-        const completedSession = sessions.find(s => s._id === sessionId);
-        if (completedSession) {
-          setReviewSession(completedSession);
-        }
+        const s = sessions.find(s => s._id === sessionId);
+        if (s) setReviewSession(s);
       }
-    } catch {
-      toast.error('Failed to update status');
-    }
+    } catch { toast.error('Failed to update status'); }
   };
 
   const handleReviewSubmit = async (rating, comment) => {
@@ -46,9 +41,7 @@ export default function Sessions() {
       toast.success('Review submitted!');
       setReviewSession(null);
       fetchMyGivenReviews();
-    } catch {
-      toast.error('Failed to submit review');
-    }
+    } catch { toast.error('Failed to submit review'); }
   };
 
   const handleAddNote = async (sessionId) => {
@@ -58,284 +51,357 @@ export default function Sessions() {
       toast.success('Note added');
       setNoteContent('');
       setActiveNoteSession(null);
-    } catch {
-      toast.error('Failed to add note');
-    }
+    } catch { toast.error('Failed to add note'); }
   };
 
+  const pendingCount   = sessions.filter(s => s.status === 'pending').length;
+  const completedCount = sessions.filter(s => s.status === 'completed').length;
+  const otherCount     = sessions.filter(s => s.status !== 'completed' && s.status !== 'pending').length;
+
   const filteredSessions = sessions.filter(s => {
-    if (filter === 'pending') return s.status === 'pending';
-    if (filter === 'completed') return s.status === 'completed';
+    if (filter === 'pending')     return s.status === 'pending';
+    if (filter === 'completed')   return s.status === 'completed';
     if (filter === 'uncompleted') return s.status !== 'completed' && s.status !== 'pending';
     return true;
   });
 
-  return (
-    <div className="py-8 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('Your Sessions')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('Manage your learning')}</p>
-        </div>
+  const tabs = [
+    { key: 'pending',     label: 'Pending',     shortLabel: 'Pend',  count: pendingCount,   dot: 'bg-amber-400' },
+    { key: 'completed',   label: 'Completed',   shortLabel: 'Done',  count: completedCount, dot: 'bg-emerald-400' },
+    { key: 'uncompleted', label: 'In Progress', shortLabel: 'Active',count: otherCount,     dot: 'bg-blue-400' },
+  ];
 
-        <div className="flex flex-wrap items-center gap-3">
+  const statusConfig = {
+    accepted:  { label: 'Accepted',  color: 'text-blue-700 dark:text-blue-300',    bg: 'bg-blue-50 dark:bg-blue-950/30',    border: 'border-blue-100 dark:border-blue-900/40',    dot: 'bg-blue-500'    },
+    completed: { label: 'Completed', color: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-100 dark:border-emerald-900/40', dot: 'bg-emerald-500' },
+    pending:   { label: 'Pending',   color: 'text-amber-700 dark:text-amber-300',   bg: 'bg-amber-50 dark:bg-amber-950/30',   border: 'border-amber-100 dark:border-amber-900/40',   dot: 'bg-amber-500'   },
+    cancelled: { label: 'Cancelled', color: 'text-red-700 dark:text-red-300',      bg: 'bg-red-50 dark:bg-red-950/30',      border: 'border-red-100 dark:border-red-900/40',      dot: 'bg-red-500'     },
+    rejected:  { label: 'Rejected',  color: 'text-red-700 dark:text-red-300',      bg: 'bg-red-50 dark:bg-red-950/30',      border: 'border-red-100 dark:border-red-900/40',      dot: 'bg-red-500'     },
+  };
+
+  return (
+    <div className="py-6 sm:py-8 min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between mb-6 gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+              Sessions
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {sessions.length} total · {completedCount} completed
+            </p>
+          </div>
           <button
             onClick={() => navigate('/explore')}
-            className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:shadow-lg transition flex items-center gap-1.5 shadow-primary-600/20 shadow-md"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl shadow-lg shadow-primary-500/20 hover:shadow-xl hover:shadow-primary-500/30 hover:-translate-y-0.5 transition-all shrink-0"
           >
-            + {t('Book Session')}
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden xs:inline">Book </span>Session
           </button>
+        </div>
 
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
-          {[
-            { key: 'pending', count: sessions.filter(s => s.status === 'pending').length },
-            { key: 'completed', count: sessions.filter(s => s.status === 'completed').length },
-            { key: 'uncompleted', count: sessions.filter(s => s.status !== 'completed' && s.status !== 'pending').length }
-          ].map(({ key, count }) => (
+        {/* ── Summary stat cards ── */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+          {tabs.map((tab) => (
             <button
-              key={key}
-              onClick={() => setFilter(key)}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition flex items-center gap-2 ${
-                filter === key
-                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border text-left transition-all ${
+                filter === tab.key
+                  ? 'border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-950/30 shadow-sm'
+                  : 'border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-200 dark:hover:border-gray-700'
               }`}
             >
-              <span>{t(key)}</span>
-              {count > 0 && (
-                <span className={`px-2 py-0.5 text-xs rounded-full font-bold ${
-                  filter === key
-                    ? 'bg-primary-50 dark:bg-primary-900/40 text-primary-600 dark:text-primary-400'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+              <div className={`text-xl sm:text-2xl font-extrabold mb-0.5 ${filter === tab.key ? 'text-primary-700 dark:text-primary-300' : 'text-gray-900 dark:text-white'}`}>
+                {tab.count}
+              </div>
+              <div className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wide leading-tight ${filter === tab.key ? 'text-primary-500 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <span className="sm:hidden">{tab.shortLabel}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab bar ── */}
+        <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-5 overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setFilter(tab.key)}
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap shrink-0 ${
+                filter === tab.key
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} />
+              {tab.label}
+              {tab.count > 0 && (
+                <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full ${
+                  filter === tab.key ? 'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300' : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
                 }`}>
-                  {count}
+                  {tab.count}
                 </span>
               )}
             </button>
           ))}
-          </div>
         </div>
-      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-        </div>
-      ) : filteredSessions.length === 0 ? (
-        <div className="py-20 text-center bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800">
-          <div className="w-20 h-20 bg-gray-50 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Calendar className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+        {/* ── Session list ── */}
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-[3px] border-primary-100 dark:border-primary-900 border-t-primary-600 rounded-full animate-spin" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-            {filter === 'pending'
-              ? t('No pending sessions')
-              : filter === 'completed'
-              ? t('No completed sessions')
-              : t('No uncompleted sessions')}
-          </h3>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">
-            {filter === 'pending'
-              ? t('You have no pending session requests.')
-              : filter === 'completed'
-              ? t("You haven't completed any sessions yet.")
-              : t("You don't have any uncompleted sessions.")}
-          </p>
-          <button
-            onClick={() => navigate('/explore')}
-            className="mt-6 px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition shadow-lg shadow-primary-600/20"
-          >
-            {t('Find a Mentor')}
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredSessions.map((session) => {
-            const isMentor = session.mentor?._id === user._id;
-            const other = isMentor ? session.learner : session.mentor;
-            const sessionDate = new Date(session.scheduledAt);
-            const givenReview = myGivenReviews.find(r => 
-              (r.session?._id === session._id) || (r.session === session._id)
-            );
+        ) : filteredSessions.length === 0 ? (
+          <div className="py-16 text-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-4">
+            <div className="w-14 h-14 mx-auto mb-4 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+              <Calendar className="w-7 h-7 text-gray-300 dark:text-gray-600" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-2">
+              {filter === 'pending' ? 'No pending sessions' : filter === 'completed' ? 'No completed sessions yet' : 'No sessions in progress'}
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-xs mx-auto">
+              {filter === 'pending' ? 'No session requests awaiting response.' : filter === 'completed' ? 'Complete your first session to see it here.' : 'No accepted sessions right now.'}
+            </p>
+            <button onClick={() => navigate('/explore')} className="btn-primary mx-auto inline-flex text-sm py-2.5 px-5">
+              Find a Mentor
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 sm:space-y-4">
+            {filteredSessions.map((session) => {
+              const isMentor  = session.mentor?._id === user._id;
+              const other     = isMentor ? session.learner : session.mentor;
+              const sessionDate = new Date(session.scheduledAt);
+              const givenReview = myGivenReviews.find(r => (r.session?._id === session._id) || (r.session === session._id));
+              const config    = statusConfig[session.status] || statusConfig.pending;
+              const isExpanded = expandedSession === session._id;
 
-            return (
-              <div key={session._id} className="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <Avatar src={other?.avatar} name={other?.name} size="lg" className="rounded-2xl" />
-                    <div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-1 inline-block ${
-                        isMentor ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      }`}>
-                        {isMentor ? t('Mentoring') : t('Learning')}
+              return (
+                <div
+                  key={session._id}
+                  className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden hover:border-gray-200 dark:hover:border-gray-700 hover:shadow-md transition-all duration-300"
+                >
+                  {/* ── Main card body ── */}
+                  <div className="p-4 sm:p-5">
+
+                    {/* Top row: avatar + name/skill + status badge */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <Avatar src={other?.avatar} name={other?.name} size="md" className="rounded-xl shadow-sm shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                              <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white leading-tight truncate">{other?.name || 'User'}</h3>
+                              <span className={`text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0 ${
+                                isMentor ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                              }`}>
+                                {isMentor ? 'Mentoring' : 'Learning'}
+                              </span>
+                            </div>
+                            {session.skill?.name && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                <BookOpen className="w-3 h-3 shrink-0" /><span className="truncate">{session.skill.name}</span>
+                              </p>
+                            )}
+                          </div>
+                          {/* Status badge — text hidden on xs */}
+                          <span className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-bold rounded-lg sm:rounded-xl border shrink-0 ${config.color} ${config.bg} ${config.border}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${config.dot}`} />
+                            <span className="hidden sm:inline">{config.label}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Date / time row */}
+                    <div className="flex items-center gap-3 sm:gap-5 mb-3 text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                        {sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white leading-tight">{other?.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{session.skill?.name}</p>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        {sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+
+                    {/* Action buttons — stacked on xs, row on sm+ */}
+                    <div className="flex flex-col xs:flex-row gap-2">
+                      {session.status === 'pending' && isMentor ? (
+                        <>
+                          <button
+                            onClick={() => handleStatusUpdate(session._id, 'accepted')}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl hover:shadow-md hover:shadow-emerald-500/25 transition-all"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />Accept
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(session._id, 'cancelled')}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 rounded-xl hover:bg-red-100 dark:hover:bg-red-950/50 transition-all"
+                          >
+                            <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />Decline
+                          </button>
+                        </>
+                      ) : session.status === 'accepted' ? (
+                        <>
+                          <button
+                            onClick={() => navigate(`/video/${session._id}`)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:shadow-md hover:shadow-blue-500/25 transition-all"
+                          >
+                            <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />Join Room
+                          </button>
+                          <button
+                            onClick={() => handleStatusUpdate(session._id, 'completed')}
+                            className="flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 rounded-xl transition-all"
+                            title="Mark complete"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">Complete</span>
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => navigate('/chat')}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />Message
+                        </button>
+                      )}
+
+                      {/* Expand toggle — only for accepted/completed */}
+                      {(session.status === 'completed' || session.status === 'accepted') && (
+                        <button
+                          onClick={() => setExpandedSession(isExpanded ? null : session._id)}
+                          className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-all"
+                          aria-label="Toggle details"
+                        >
+                          <span className="hidden sm:inline">Details</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    session.status === 'accepted' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' :
-                    session.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30' :
-                    session.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30' :
-                    'bg-red-100 text-red-700 dark:bg-red-900/30'
-                  }`}>
-                    {session.status}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">{t('Date')}</p>
-                      <p className="text-sm font-semibold dark:text-white">{sessionDate.toLocaleDateString()}</p>
+                  {/* Notes preview (collapsed) */}
+                  {session.notes && !isExpanded && (
+                    <div className="px-4 sm:px-5 pb-4">
+                      <div className="px-3 py-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Goals</p>
+                        <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{session.notes}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-2xl">
-                    <Clock className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">{t('Time')}</p>
-                      <p className="text-sm font-semibold dark:text-white">{sessionDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {session.notes && (
-                  <div className="mb-6 p-4 bg-primary-50/50 dark:bg-primary-950/10 rounded-2xl border border-primary-100/50 dark:border-primary-900/20">
-                    <p className="text-[10px] font-bold text-primary-600 dark:text-primary-400 uppercase mb-1">{t('Session Goals')}</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">{session.notes}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  {session.status === 'pending' && isMentor ? (
-                    <>
-                      <button
-                        onClick={() => handleStatusUpdate(session._id, 'accepted')}
-                        className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition flex items-center justify-center gap-2"
-                      >
-                        <CheckCircle className="w-4 h-4" /> {t('Accept')}
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(session._id, 'cancelled')}
-                        className="flex-1 py-3 bg-gray-100 dark:bg-gray-800 text-red-600 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
-                      >
-                        <XCircle className="w-4 h-4" /> {t('Decline')}
-                      </button>
-                    </>
-                  ) : session.status === 'accepted' ? (
-                    <>
-                      <button
-                        onClick={() => navigate(`/video/${session._id}`)}
-                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition flex items-center justify-center gap-2"
-                      >
-                        <Video className="w-4 h-4" /> {t('Join Room')}
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(session._id, 'completed')}
-                        className="p-3 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 rounded-xl hover:bg-emerald-200 transition"
-                        title="Mark as Complete"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => navigate('/chat')}
-                      className="w-full py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2"
-                    >
-                      <MessageSquare className="w-4 h-4" /> {t('Send Message')}
-                    </button>
                   )}
-                </div>
 
-                {/* Review Section */}
-                {session.status === 'completed' && (
-                  <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-                    {givenReview ? (
-                      <div className="flex items-start justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  {/* Expanded detail panel */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 dark:border-gray-800 px-4 sm:px-5 py-4 sm:py-5 space-y-4 bg-gray-50/50 dark:bg-gray-800/20">
+
+                      {/* Goals */}
+                      {session.notes && (
                         <div>
-                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Your Review</p>
-                          {givenReview.comment ? (
-                            <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{givenReview.comment}"</p>
+                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                            <Target className="w-3 h-3" />Session Goals
+                          </p>
+                          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                            {session.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Review */}
+                      {session.status === 'completed' && (
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                            <Star className="w-3 h-3" />Review
+                          </p>
+                          {givenReview ? (
+                            <div className="flex items-start justify-between gap-3 p-3 sm:p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+                              <div className="flex-1 min-w-0">
+                                {givenReview.comment
+                                  ? <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 italic">"{givenReview.comment}"</p>
+                                  : <p className="text-xs sm:text-sm text-gray-400 italic">No comment provided</p>
+                                }
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} className={`w-3 sm:w-4 h-3 sm:h-4 ${i < givenReview.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200 dark:text-gray-700'}`} />
+                                ))}
+                              </div>
+                            </div>
                           ) : (
-                            <p className="text-sm text-gray-500 dark:text-gray-500 italic">No comment provided</p>
+                            <button
+                              onClick={() => setReviewSession(session)}
+                              className="w-full flex items-center justify-center gap-2 py-2.5 text-xs sm:text-sm font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/30 hover:bg-primary-100 dark:hover:bg-primary-950/50 rounded-xl border border-primary-100 dark:border-primary-900/40 transition-all"
+                            >
+                              <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4" />Leave a Review
+                            </button>
                           )}
                         </div>
-                        <div className="flex text-yellow-400">
-                          {'⭐'.repeat(givenReview.rating)}
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setReviewSession(session)}
-                        className="w-full py-3 bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 rounded-xl font-bold hover:bg-primary-100 dark:hover:bg-primary-900/40 transition flex items-center justify-center gap-2"
-                      >
-                        <Star className="w-5 h-5" /> {t('Leave a Review')}
-                      </button>
-                    )}
-                  </div>
-                )}
+                      )}
 
-                {/* Shared Notes Section */}
-                {(session.status === 'completed' || session.status === 'accepted') && (
-                  <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4">{t('Shared Notes & Resources')}</h4>
-                    
-                    {session.sharedNotes && session.sharedNotes.length > 0 && (
-                      <div className="space-y-4 mb-4">
-                        {session.sharedNotes.map((note, idx) => (
-                          <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Avatar src={note.user?.avatar} name={note.user?.name} size="sm" />
-                              <span className="text-xs font-semibold dark:text-white">{note.user?.name}</span>
-                              <span className="text-[10px] text-gray-400">{new Date(note.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">{note.content}</p>
+                      {/* Shared Notes */}
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                          <FileText className="w-3 h-3" />Shared Notes
+                        </p>
+
+                        {session.sharedNotes?.length > 0 && (
+                          <div className="space-y-2 mb-2">
+                            {session.sharedNotes.map((note, idx) => (
+                              <div key={idx} className="p-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                                    {note.user?.name?.charAt(0) || '?'}
+                                  </div>
+                                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{note.user?.name}</span>
+                                  <span className="text-[10px] text-gray-400 shrink-0">{new Date(note.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{note.content}</p>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        )}
 
-                    {activeNoteSession === session._id ? (
-                      <div className="flex flex-col gap-2">
-                        <textarea
-                          autoFocus
-                          value={noteContent}
-                          onChange={(e) => setNoteContent(e.target.value)}
-                          placeholder={t('Type your notes')}
-                          className="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500"
-                          rows="3"
-                        />
-                        <div className="flex justify-end gap-2">
+                        {activeNoteSession === session._id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              autoFocus
+                              value={noteContent}
+                              onChange={(e) => setNoteContent(e.target.value)}
+                              placeholder="Add a note or resource link..."
+                              className="w-full px-3 sm:px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none transition-all"
+                              rows={3}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => { setActiveNoteSession(null); setNoteContent(''); }} className="px-3 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                                Cancel
+                              </button>
+                              <button onClick={() => handleAddNote(session._id)} className="px-3 sm:px-4 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors">
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => { setActiveNoteSession(null); setNoteContent(''); }}
-                            className="px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                            onClick={() => setActiveNoteSession(session._id)}
+                            className="w-full py-2.5 text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 border border-dashed border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 rounded-xl hover:bg-primary-50/50 dark:hover:bg-primary-950/20 transition-all flex items-center justify-center gap-1.5"
                           >
-                            {t('Cancel')}
+                            + Add Note
                           </button>
-                          <button
-                            onClick={() => handleAddNote(session._id)}
-                            className="px-4 py-2 text-xs font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-                          >
-                            {t('Save Note')}
-                          </button>
-                        </div>
+                        )}
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => setActiveNoteSession(session._id)}
-                        className="w-full py-2 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-primary-600 hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition"
-                      >
-                        {t('+ Add Session Note')}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       <ReviewModal
         isOpen={!!reviewSession}
