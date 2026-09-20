@@ -300,7 +300,7 @@ export default function Community() {
   }) : [];
 
   return (
-    <div className="py-8 max-w-3xl mx-auto">
+    <div className="py-8 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Back */}
       <button onClick={() => navigate('/community')} className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 mb-4 inline-block">
         {t('Back to Communities')}

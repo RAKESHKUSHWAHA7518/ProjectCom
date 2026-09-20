@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, LayoutDashboard, CalendarDays, MessageCircle, Trophy, Globe,
   Bell, User, LogOut, Menu, X, ArrowRight, Sparkles, Video, Award,
-  Sun, Moon,
+  Sun, Moon, Shield,
 } from 'lucide-react'
 import { useAuthStore } from './store/authStore'
 import { useNotificationStore } from './store/notificationStore'
@@ -53,13 +53,13 @@ function PageLoader() {
 
 // Preload module map — mirrors the lazy import paths above
 const preloadMap = {
-  '/dashboard':  () => import('./pages/Dashboard'),
-  '/explore':    () => import('./pages/Explore'),
-  '/profile':    () => import('./pages/Profile'),
-  '/sessions':   () => import('./pages/Sessions'),
-  '/chat':       () => import('./pages/Chat'),
-  '/leaderboard':() => import('./pages/Leaderboard'),
-  '/community':  () => import('./pages/Community'),
+  '/dashboard': () => import('./pages/Dashboard'),
+  '/explore': () => import('./pages/Explore'),
+  '/profile': () => import('./pages/Profile'),
+  '/sessions': () => import('./pages/Sessions'),
+  '/chat': () => import('./pages/Chat'),
+  '/leaderboard': () => import('./pages/Leaderboard'),
+  '/community': () => import('./pages/Community'),
 }
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -215,10 +215,10 @@ function ThemeToggle() {
 
 function LanguageToggle() {
   const { i18n } = useTranslation();
-  
+
   return (
-    <select 
-      value={i18n.language} 
+    <select
+      value={i18n.language}
       onChange={(e) => i18n.changeLanguage(e.target.value)}
       className="p-1.5 ml-1 text-sm font-semibold text-gray-500 bg-transparent border border-gray-200 dark:border-gray-700 rounded-lg dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
     >
@@ -243,7 +243,7 @@ function Navbar({ onSearchClick }) {
     if (user?.token) {
       fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions?status=completed`, {
         headers: { Authorization: `Bearer ${user.token}` }
-      }).then(r => r.json()).then(data => setCompletedCount(data.length || 0)).catch(() => {});
+      }).then(r => r.json()).then(data => setCompletedCount(data.length || 0)).catch(() => { });
     }
   }, [user])
 
@@ -264,7 +264,11 @@ function Navbar({ onSearchClick }) {
     { to: '/community', label: t('Community'), icon: Globe },
   ] : []
 
-  const navLinks = [...baseNavLinks, ...advancedNavLinks]
+  const adminNavLinks = user?.role === 'admin' ? [
+    { to: '/admin', label: 'Admin', icon: Shield },
+  ] : []
+
+  const navLinks = [...baseNavLinks, ...advancedNavLinks, ...adminNavLinks]
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
 
@@ -304,7 +308,7 @@ function Navbar({ onSearchClick }) {
 
                 <button
                   onClick={onSearchClick}
-                  className="flex items-center gap-2 px-2.5 xl:px-3 py-1.5 ml-1 text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-750 transition-all group shrink-0"
+                  className="flex items-center gap-2 px-2.5 xl:px-3 py-1.5 ml-1 text-sm text-gray-400 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all group shrink-0"
                   aria-label="Search"
                 >
                   <Search className="w-4 h-4 group-hover:text-primary-500 transition-colors" />
@@ -336,6 +340,21 @@ function Navbar({ onSearchClick }) {
               </>
             ) : (
               <>
+                <div className="flex items-center gap-5 mr-3">
+                  <a href="/#features" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    {t('Features')}
+                  </a>
+                  <a href="/#how-it-works" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    {t('How It Works')}
+                  </a>
+                  <a href="/#testimonials" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    {t('Testimonials')}
+                  </a>
+                  <Link to="/explore" className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    {t('Explore')}
+                  </Link>
+                </div>
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
                 <ThemeToggle />
                 <LanguageToggle />
                 <Link
@@ -472,6 +491,35 @@ function Navbar({ onSearchClick }) {
                   </>
                 ) : (
                   <>
+                    <a
+                      href="/#features"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                    >
+                      {t('Features')}
+                    </a>
+                    <a
+                      href="/#how-it-works"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                    >
+                      {t('How It Works')}
+                    </a>
+                    <a
+                      href="/#testimonials"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                    >
+                      {t('Testimonials')}
+                    </a>
+                    <Link
+                      to="/explore"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl"
+                    >
+                      {t('Explore Skills')}
+                    </Link>
+                    <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
                     <div className="flex items-center justify-between px-4 py-2 mb-2">
                       <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Language</span>
                       <LanguageToggle />
@@ -540,7 +588,7 @@ function SocketManager() {
 }
 
 /* ============================================================
-   APP ROOT
+   MAIN LAYOUT & APP ROOT
    ============================================================ */
 function App() {
   const { user } = useAuthStore()
@@ -565,7 +613,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <div className="min-h-screen w-full overflow-x-hidden bg-gray-50 dark:bg-gray-950 font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300">
+        <div className="min-h-screen w-full overflow-x-hidden bg-transparent font-sans selection:bg-primary-100 dark:selection:bg-primary-900 selection:text-primary-900 dark:selection:text-primary-100 transition-colors duration-300 flex flex-col">
           <SkipLink />
           <Toaster position="top-right" toastOptions={{ className: 'dark:!bg-gray-800 dark:!text-white dark:!border-gray-700', style: { borderRadius: '12px', fontSize: '14px' } }} />
           <SocketManager />

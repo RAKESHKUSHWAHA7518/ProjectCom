@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "test": "node --test --experimental-test-coverage",
     "test:unit": "node --test '__tests__/unit/**/*.test.js'",
-    "test:integration": "node --test '__tests__/integration/**/*.test.js'"
+    "test:integration": "node --test '__tests__/integration/**/*.test.js'",
+    "make-admin": "node scripts/makeAdmin.js"
   },
   "keywords": [],
   "author": "",

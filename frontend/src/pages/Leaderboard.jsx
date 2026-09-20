@@ -49,7 +49,7 @@ export default function Leaderboard() {
   };
 
   return (
-    <div className="py-8">
+    <div className="py-8 px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🏆 {t('Leaderboard')}</h1>
         <p className="mt-2 text-gray-500 dark:text-gray-400">{type === 'learners' ? t('Our top learners') : t('Our top mentors')}</p>

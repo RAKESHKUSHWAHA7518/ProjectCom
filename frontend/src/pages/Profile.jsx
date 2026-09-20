@@ -170,7 +170,7 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="py-8 max-w-4xl mx-auto">
+      <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden animate-pulse">
           <div className="absolute top-0 left-0 right-0 h-32 bg-gray-200 dark:bg-gray-800" />
           <div className="relative flex flex-col md:flex-row items-start gap-6 pt-16">
@@ -218,7 +218,7 @@ export default function Profile() {
   const completeness = getCompletenessScore();
 
   return (
-    <div className="py-8 max-w-4xl mx-auto">
+    <div className="py-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Profile Header */}
       <div className="relative p-8 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500" />

@@ -113,7 +113,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] -mx-4 sm:-mx-6 lg:-mx-8">
+    <div className="flex h-[calc(100vh-5rem)]">
       {/* Sidebar - Conversation List */}
       <div className={`${conversationId ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 lg:w-96 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800`}>
         <div className="p-4 border-b border-gray-100 dark:border-gray-800">
