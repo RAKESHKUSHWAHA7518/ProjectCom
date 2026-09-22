@@ -13,12 +13,14 @@ export default function VerificationPanel({ user, isOwnProfile }) {
     verificationRequests,
     fetchVerificationStatus,
     requestPhoneVerification,
+    verifyPhone,
     requestLinkedInVerification,
     requestIdentityVerification,
     requestVideoIntroVerification,
     isLoading,
   } = useVerificationStore();
   const [activeModal, setActiveModal] = useState(null);
+  const [phoneStep, setPhoneStep] = useState('request'); // 'request' | 'verify'
   const [formData, setFormData] = useState({});
 
   React.useEffect(() => {
@@ -45,6 +47,13 @@ export default function VerificationPanel({ user, isOwnProfile }) {
       }
       return;
     }
+    if (type === 'phone') {
+      const hasPending = verificationRequests?.some(r => r.type === 'phone' && r.status === 'pending');
+      setPhoneStep(hasPending ? 'verify' : 'request');
+      setActiveModal('phone');
+      setFormData({});
+      return;
+    }
     setActiveModal(type);
     setFormData({});
   };
@@ -55,13 +64,25 @@ export default function VerificationPanel({ user, isOwnProfile }) {
       let result;
       switch (activeModal) {
         case 'phone':
-          result = await requestPhoneVerification(formData.phoneNumber);
-          if (result?.code) {
-            toast.success(`Verification code: ${result.code} (dev mode)`);
+          if (phoneStep === 'request') {
+            result = await requestPhoneVerification(formData.phoneNumber);
+            if (result?.code) {
+              toast.success(`Verification code: ${result.code} (dev mode)`);
+            } else {
+              toast.success('Verification code sent to your phone');
+            }
+            setPhoneStep('verify');
+            setFormData({});
+            return;
           } else {
-            toast.success('Verification code sent to your phone');
+            await verifyPhone(formData.verificationCode);
+            toast.success('Phone number verified successfully!');
+            setActiveModal(null);
+            setFormData({});
+            setPhoneStep('request');
+            if (user?._id) fetchVerificationStatus(user._id);
+            return;
           }
-          break;
         case 'linkedin':
           result = await requestLinkedInVerification(formData.linkedinUrl);
           toast.success('LinkedIn verification request submitted');
@@ -108,8 +129,9 @@ export default function VerificationPanel({ user, isOwnProfile }) {
       </div>
       <VerificationModals
         isOpen={!!activeModal}
-        onClose={() => setActiveModal(null)}
+        onClose={() => { setActiveModal(null); setPhoneStep('request'); }}
         type={activeModal}
+        phoneStep={phoneStep}
         onSubmit={handleSubmit}
         isLoading={isLoading}
         formData={formData}
@@ -120,13 +142,19 @@ export default function VerificationPanel({ user, isOwnProfile }) {
   );
 }
 
-function VerificationModals({ isOpen, onClose, type, onSubmit, isLoading, formData, setFormData, t: tProp }) {
+function VerificationModals({ isOpen, onClose, type, phoneStep = 'request', onSubmit, isLoading, formData, setFormData, t: tProp }) {
   const { t: tHook } = useTranslation();
   const t = tProp || tHook || ((key) => key);
   if (!isOpen) return null;
 
   const modals = {
-    phone: {
+    phone: phoneStep === 'verify' ? {
+      title: 'Enter Verification Code',
+      icon: Phone,
+      fields: [
+        { name: 'verificationCode', label: '6-Digit SMS Code', type: 'text', placeholder: '123456', required: true },
+      ],
+    } : {
       title: 'Verify Phone Number',
       icon: Phone,
       fields: [

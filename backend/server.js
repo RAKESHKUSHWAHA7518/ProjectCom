@@ -203,3 +203,4 @@ server.listen(PORT, () => {
   const mongoHost = (process.env.MONGO_URI || '').replace(/\/\/[^@]+@/, '//<credentials>@');
   logger.info(`Server running on port ${PORT} | NODE_ENV=${process.env.NODE_ENV || 'development'} | DB=${mongoHost}`);
 });
+

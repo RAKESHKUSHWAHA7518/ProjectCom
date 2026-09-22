@@ -3,18 +3,28 @@ import { sendVerificationEmail } from '../services/emailService.js';
 
 export const getVerificationStatus = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('verification verificationRequests');
+    const user = await User.findById(req.user._id).select('verification verificationRequests emailVerified');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isFullyVerified = user.verification.email &&
+    if (!user.verification) {
+      user.verification = { email: false, phone: false, linkedin: false, identity: false, videoIntro: false };
+    }
+
+    // Auto-sync email verification if user already verified their email
+    if (user.emailVerified && !user.verification.email) {
+      user.verification.email = true;
+      await user.save();
+    }
+
+    const isFullyVerified = !!(user.verification.email &&
       user.verification.phone &&
-      user.verification.linkedin;
+      user.verification.linkedin);
 
     res.json({
       verification: user.verification,
-      verificationRequests: user.verificationRequests,
+      verificationRequests: user.verificationRequests || [],
       isFullyVerified,
     });
   } catch (error) {

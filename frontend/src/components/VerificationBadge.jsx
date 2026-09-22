@@ -98,17 +98,19 @@ export function VerificationStatusCard({ verifications, requests, onRequestVerif
           const config = VERIFICATION_TYPES[type];
           const isVerified = verifications[type];
           const request = requests?.find(r => r.type === type && r.status === 'pending');
+          const isPhonePending = type === 'phone' && !!request;
+          const canClick = !isVerified && (!request || isPhonePending);
 
           return (
             <button
               key={type}
-              onClick={() => !isVerified && !request && onRequestVerification?.(type)}
-              disabled={isVerified || !!request}
+              onClick={() => canClick && onRequestVerification?.(type)}
+              disabled={!canClick}
               className={`p-3 rounded-xl text-center transition-all ${
                 isVerified
                   ? `${config.bgColor} ${config.color} border ${config.color}/30 cursor-default`
                   : request
-                  ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 cursor-not-allowed'
+                  ? `bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 ${isPhonePending ? 'cursor-pointer hover:border-amber-400' : 'cursor-not-allowed'}`
                   : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-950/30'
               }`}
             >
@@ -118,7 +120,7 @@ export function VerificationStatusCard({ verifications, requests, onRequestVerif
               {request && (
                 <div className="flex items-center justify-center gap-1 mt-1">
                   <Clock className="w-3 h-3" />
-                  <span className="text-[10px]">Pending</span>
+                  <span className="text-[10px]">{isPhonePending ? 'Enter Code' : 'Pending'}</span>
                 </div>
               )}
             </button>

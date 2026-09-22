@@ -5,7 +5,7 @@ import {
   Users, BarChart3, Flag, Search, RefreshCw, CheckCircle, XCircle,
   UserX, UserCheck, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, TrendingUp, TrendingDown,
   Activity, Shield, Award, Globe, Settings, MoreHorizontal, Eye, Edit,
-  Download, Filter, AlertTriangle, Bell, Mail, Phone, Link, Camera
+  Download, Filter, AlertTriangle, Bell, Mail, Phone, Link, Camera, ExternalLink
 } from 'lucide-react'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
@@ -499,6 +499,176 @@ function ReportsSection() {
   )
 }
 
+/* ── Verification Requests Section ───────────────────────────── */
+function VerificationRequestsSection() {
+  const { user } = useAuthStore()
+  const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(null)
+
+  const loadRequests = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE}/verification/pending`, {
+        headers: { Authorization: `Bearer ${user?.token}` },
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setRequests(data.requests || [])
+    } catch (_e) {
+      setError(_e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [user?.token])
+
+  useEffect(() => { loadRequests() }, [loadRequests])
+
+  const handleReview = async (userId, requestType, action) => {
+    setActionLoading(`${userId}-${requestType}`)
+    try {
+      const res = await fetch(`${API_BASE}/verification/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user?.token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify({ userId, requestType, action }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to review request')
+      toast.success(action === 'approve' ? 'Verification approved!' : 'Verification rejected')
+      loadRequests()
+    } catch (err) {
+      toast.error(err.message || 'Action failed')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  if (error) return <SectionError label="Verification Requests" message={error} />
+
+  const TYPE_LABELS = {
+    phone: { label: 'Phone', color: 'badge-emerald' },
+    identity: { label: 'Identity', color: 'badge-purple' },
+    linkedin: { label: 'LinkedIn', color: 'badge-blue' },
+    videoIntro: { label: 'Video Intro', color: 'badge-rose' },
+  }
+
+  return (
+    <Section
+      title={`Pending Verifications (${requests.length})`}
+      icon={Shield}
+      subtitle="Review submitted user verification documents, phone numbers, and profiles"
+    >
+      {loading ? (
+        <div className="py-8 text-center text-gray-400">Loading pending requests...</div>
+      ) : requests.length === 0 ? (
+        <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+          <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+          <p className="font-medium text-gray-700 dark:text-gray-300">No pending verification requests</p>
+          <p className="text-xs text-gray-400 mt-1">All user verifications are up to date.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          {requests.map((r, i) => {
+            const typeInfo = TYPE_LABELS[r.type] || { label: r.type, color: 'badge-gray' }
+            const isProcessing = actionLoading === `${r.userId}-${r.type}`
+
+            return (
+              <div key={`${r.userId}-${r.type}-${i}`} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center font-bold text-primary-600 shrink-0">
+                    {r.userName?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900 dark:text-white">{r.userName}</span>
+                      <span className={`badge ${typeInfo.color}`}>{typeInfo.label}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{r.userEmail}</p>
+
+                    {/* Data details */}
+                    <div className="mt-2 text-xs bg-gray-50 dark:bg-gray-800/60 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/60 space-y-1">
+                      {r.type === 'phone' && (
+                        <p><span className="font-medium text-gray-700 dark:text-gray-300">Phone Number:</span> {r.data?.phoneNumber || 'N/A'}</p>
+                      )}
+                      {r.type === 'identity' && (
+                        <>
+                          <p><span className="font-medium text-gray-700 dark:text-gray-300">Doc Type:</span> {r.data?.documentType} | <span className="font-medium text-gray-700 dark:text-gray-300">Doc #:</span> {r.data?.documentNumber}</p>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {r.data?.documentFront && (
+                              <a href={r.data.documentFront} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-0.5">
+                                Front Doc <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                            {r.data?.documentBack && (
+                              <a href={r.data.documentBack} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-0.5">
+                                Back Doc <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                            {r.data?.selfie && (
+                              <a href={r.data.selfie} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-0.5">
+                                Selfie <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      {r.type === 'linkedin' && (
+                        <p>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">LinkedIn:</span>{' '}
+                          <a href={r.data?.linkedinUrl} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-0.5">
+                            {r.data?.linkedinUrl} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </p>
+                      )}
+                      {r.type === 'videoIntro' && (
+                        <p>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">Video:</span>{' '}
+                          <a href={r.data?.videoUrl} target="_blank" rel="noreferrer" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center gap-0.5">
+                            {r.data?.videoUrl} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </p>
+                      )}
+                      {r.submittedAt && (
+                        <p className="text-[11px] text-gray-400 pt-0.5">Submitted: {new Date(r.submittedAt).toLocaleString()}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                  <button
+                    onClick={() => handleReview(r.userId, r.type, 'approve')}
+                    disabled={isProcessing}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 disabled:opacity-50 shadow-sm"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReview(r.userId, r.type, 'reject')}
+                    disabled={isProcessing}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-600 dark:bg-gray-800 dark:hover:bg-red-950/30 dark:text-gray-300 dark:hover:text-red-400 transition flex items-center gap-1.5 disabled:opacity-50 border border-gray-200 dark:border-gray-700"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    Reject
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Section>
+  )
+}
+
 /* ── Shared UI helpers ─────────────────────────────────────── */
 function Section({ title, icon: IconComponent, subtitle, children }) {
   const Icon = IconComponent
@@ -579,6 +749,7 @@ export default function AdminDashboard() {
 
         <StatsSection />
         <UsersSection />
+        <VerificationRequestsSection />
         <ReportsSection />
       </div>
     </div>

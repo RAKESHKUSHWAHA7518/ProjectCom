@@ -275,6 +275,11 @@ export const verifyEmail = async (req, res) => {
     if (!user) return res.status(400).json({ message: 'Verification link expired or already used' });
 
     user.emailVerified = true;
+    if (!user.verification) {
+      user.verification = { email: true, phone: false, linkedin: false, identity: false, videoIntro: false };
+    } else {
+      user.verification.email = true;
+    }
     user.emailVerificationToken = null;
     user.emailVerificationExpiry = null;
     await user.save();
