@@ -19,7 +19,8 @@ const ICON_MAP = { Star, Target, Flame, Gem, Crown, Rocket, Trophy, Medal };
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /* ── Small section card wrapper ── */
-function SectionCard({ title, icon: Icon, iconBg, iconColor, badge, children, action }) {
+function SectionCard({ title, icon, iconBg, iconColor, badge, children, action }) {
+  const Icon = icon;
   return (
     <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">

@@ -33,7 +33,10 @@ function useAdminFetch(path, deps = []) {
     }
   }, [path, user?.token])
 
-  useEffect(() => { load() }, [...deps, load])
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps, load])
 
   return { data, loading, error, reload: load }
 }
