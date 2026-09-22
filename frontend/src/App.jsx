@@ -264,11 +264,7 @@ function Navbar({ onSearchClick }) {
     { to: '/community', label: t('Community'), icon: Globe },
   ] : []
 
-  const adminNavLinks = user?.role === 'admin' ? [
-    { to: '/admin', label: 'Admin', icon: Shield },
-  ] : []
-
-  const navLinks = [...baseNavLinks, ...advancedNavLinks, ...adminNavLinks]
+  const navLinks = [...baseNavLinks, ...advancedNavLinks]
 
   const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
 
@@ -305,6 +301,23 @@ function Navbar({ onSearchClick }) {
                     </Link>
                   )
                 })}
+
+                {/* Admin Portal Button - ONLY rendered if authenticated user is admin */}
+                {user?.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    onMouseEnter={() => preloadMap['/admin']?.()}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ml-1 ${
+                      isActive('/admin')
+                        ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-500/25'
+                        : 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 border-purple-200 dark:border-purple-800/80 shadow-xs'
+                    }`}
+                    title="Admin Dashboard"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Admin</span>
+                  </Link>
+                )}
 
                 <button
                   onClick={onSearchClick}
@@ -473,6 +486,24 @@ function Navbar({ onSearchClick }) {
                         Profile
                       </Link>
                     </div>
+
+                    {/* Admin Portal Button (Mobile) - ONLY rendered if authenticated user is admin */}
+                    {user?.role === 'admin' && (
+                      <div className="pt-1">
+                        <Link
+                          to="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3 px-4 py-3 text-sm font-bold rounded-xl transition-all border ${
+                            isActive('/admin')
+                              ? 'bg-purple-600 text-white border-purple-500 shadow-md'
+                              : 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800'
+                          }`}
+                        >
+                          <Shield className="w-5 h-5" />
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      </div>
+                    )}
 
                     <div className="border-t border-gray-100 dark:border-gray-800 my-2" />
 
